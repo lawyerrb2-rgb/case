@@ -1,0 +1,346 @@
+import os
+
+# Create HTML content for the design preview/guide
+html_content = """<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ระบบบริหารจัดการคดีความ (LawFirm Case Management System)</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm 12mm;
+            background-color: #f8fafc;
+        }
+        * {
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            color: #1e293b;
+            font-size: 10.5pt;
+            line-height: 1.5;
+            background-color: #f8fafc;
+        }
+        h1 {
+            font-size: 20pt;
+            color: #0f172a;
+            margin: 0 0 5px 0;
+            font-weight: 700;
+        }
+        h2 {
+            font-size: 14pt;
+            color: #1e3a8a;
+            border-left: 4px solid #2563eb;
+            padding-left: 8px;
+            margin: 25px 0 12px 0;
+            font-weight: 600;
+            page-break-after: avoid;
+        }
+        h3 {
+            font-size: 11.5pt;
+            color: #0f172a;
+            margin: 15px 0 8px 0;
+            font-weight: 600;
+            page-break-after: avoid;
+        }
+        p {
+            margin: 0 0 10px 0;
+            color: #475569;
+        }
+        .header-banner {
+            margin: -15mm -12mm 20px -12mm;
+            padding: 25px 12mm;
+            background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+            color: #ffffff;
+        }
+        .header-banner h1 {
+            color: #ffffff;
+        }
+        .header-banner p {
+            color: #93c5fd;
+            margin: 0;
+            font-size: 11pt;
+        }
+        .card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+        .grid-2 {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            margin-bottom: 15px;
+        }
+        .col {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+        .col:first-child {
+            padding-right: 10px;
+        }
+        .col:last-child {
+            padding-left: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 10pt;
+        }
+        th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 600;
+            text-align: left;
+            padding: 8px 10px;
+            border-bottom: 2px solid #cbd5e1;
+        }
+        td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+            vertical-align: top;
+        }
+        tr:nth-child(even) td {
+            background-color: #f8fafc;
+        }
+        pre {
+            background-color: #0f172a;
+            color: #38bdf8;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 9pt;
+            overflow: hidden;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            font-size: 8.5pt;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+        .badge-danger { background-color: #fee2e2; color: #991b1b; }
+        .badge-warning { background-color: #fef3c7; color: #92400e; }
+        .badge-success { background-color: #dcfce7; color: #166534; }
+        .badge-primary { background-color: #dbeafe; color: #1e40af; }
+        
+        .math {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-banner">
+        <h1>ระบบจัดเก็บข้อมูลคดีความ (LawFirm Web App Architecture)</h1>
+        <p>พิมพ์เขียวสถาปัตยกรรมระบบฐานข้อมูล Supabase และการออกแบบหน้าจอผู้ใช้งานด้วย Tailwind CSS สำหรับทนายความ</p>
+    </div>
+
+    <h2>1. โครงสร้างฐานข้อมูลระดับโปรดักชัน (Supabase SQL Schema)</h2>
+    <p>สคริปต์ SQL ด้านล่างนี้ประกอบด้วยการสร้างตาราง (Tables), การตั้งค่าข้อจำกัด (Constraints), ความสัมพันธ์ (Foreign Keys) รวมถึงการเปิดใช้งานระบบความปลอดภัย <strong>Row Level Security (RLS)</strong> เพื่อปกป้องข้อมูลความลับของลูกความ</p>
+    
+    <pre>-- 1. ตารางคดีความ (cases)
+CREATE TABLE cases (
+    case_id TEXT PRIMARY KEY DEFAULT 'CASE-' || to_char(current_timestamp, 'YYYYMMDD-') || LPAD(nextval('cases_seq')::text, 4, '0'),
+    black_number TEXT NOT NULL,
+    red_number TEXT,
+    court_name TEXT NOT NULL,
+    case_type TEXT CHECK (case_type IN ('Civil', 'Criminal', 'Labor', 'Administrative', 'Other')),
+    case_status TEXT DEFAULT 'Draft' CHECK (case_status IN ('Draft', 'In_Progress', 'Appealing', 'Closed')),
+    claim_amount NUMERIC(15, 2) DEFAULT 0.00,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- 2. ตารางผู้เกี่ยวข้องในคดี (contacts)
+CREATE TABLE contacts (
+    contact_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id TEXT REFERENCES cases(case_id) ON DELETE CASCADE,
+    full_name TEXT NOT NULL,
+    role TEXT CHECK (role IN ('Client_Plaintiff', 'Client_Defendant', 'Opponent', 'Witness', 'Other')),
+    citizen_id TEXT,
+    contact_info TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- 3. ตารางตารางนัดหมายและปฏิทินคดี (schedules)
+CREATE TABLE schedules (
+    event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id TEXT REFERENCES cases(case_id) ON DELETE CASCADE,
+    event_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    event_type TEXT NOT NULL,
+    remind_days INT DEFAULT 7,
+    notes TEXT,
+    is_completed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- 4. ตารางจัดเก็บเอกสารทางกฎหมาย (documents)
+CREATE TABLE documents (
+    doc_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id TEXT REFERENCES cases(case_id) ON DELETE CASCADE,
+    doc_name TEXT NOT NULL,
+    file_path TEXT NOT NULL, -- ลิงก์ไปยัง Supabase Storage Bucket
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);</pre>
+
+    <div class="card">
+        <h3>ข้อแนะนำด้านความปลอดภัยและการรักษาข้อมูลความลับ (Security & RLS)</h3>
+        <p>เนื่องจากข้อมูลทางกฎหมายมีความอ่อนไหวสูงมาก คุณทนายความต้องเปิดใช้งาน Row Level Security (RLS) เพื่อป้องกันไม่ให้บุคคลภายนอกเข้าถึงข้อมูลได้โดยตรง:</p>
+        <pre>-- เปิดใช้งาน RLS สำหรับทุกตาราง
+ALTER TABLE cases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+
+-- ตัวอย่างสิทธิ์: อนุญาตให้ผู้ที่ล็อกอินผ่านระบบ (Authenticated Users) เข้าถึงข้อมูลได้เท่านั้น
+CREATE POLICY "Allow authenticated users access" ON cases 
+    FOR ALL TO authenticated USING (true);</pre>
+    </div>
+
+    <h2>2. สถาปัตยกรรมหน้าจอผู้ใช้งาน (Tailwind CSS UI Architecture)</h2>
+    <p>การออกแบบหน้าจอเน้นความสะอาด รวดเร็ว และเน้นการมองเห็น "นัดหมายสำคัญ" และ "สถานะคดี" ได้ทันทีโดยไม่ต้องคลิกหลายครั้ง โทนสีเน้นสีกรมท่า (Slate/Navy) เพื่อสร้างความน่าเชื่อถือ</p>
+
+    <h3>A. ส่วนหัวและแถบค้นหาด่วน (Sticky Header & Global Search)</h3>
+    <p>องค์ประกอบด้านบนสุดจะมีฟิลด์ค้นหาแบบสากล (Global Search) ที่ดึงความสามารถของ Full-Text Search บน Supabase มาใช้ ทำให้ค้นหาเจอทั้งชื่อลูกความ เลขคดีดำ หรือชื่อศาลได้พร้อมกัน</p>
+    
+    <div class="card">
+        <strong>โครงสร้างโค้ดส่วนค้นหา (Tailwind class structure):</strong>
+        <pre>&lt;div class="sticky top-0 z-50 flex items-center justify-between bg-slate-900 px-6 py-4 text-white shadow-md"&gt;
+    &lt;div class="flex items-center space-x-3"&gt;
+        &lt;span class="text-xl font-bold tracking-wider text-blue-400"&gt;JusticeFlow&lt;/span&gt;
+        &lt;span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded"&gt;v1.0&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class="w-1/3 relative"&gt;
+        &lt;input type="text" placeholder="ค้นหาด่วน (ชื่อลูกความ, เลขคดีดำ, ศาล)..." class="w-full bg-slate-800 text-sm text-slate-200 pl-10 pr-4 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500" /&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</pre>
+    </div>
+
+    <h3>B. แดชบอร์ดสรุปงานและการแจ้งเตือนด่วน (Executive Dashboard Elements)</h3>
+    <p>แบ่งหน้าจอออกเป็นบล็อกข้อมูลเพื่อให้ง่ายต่อการประเมินสถานการณ์รายวัน</p>
+    
+    <div class="grid-2">
+        <div class="col">
+            <div class="card" style="margin-bottom:0;">
+                <h4 style="margin:0 0 10px 0; color:#1e3a8a;">🚨 กำหนดนัดหมายและวันวิกฤต (Upcoming Deadlines)</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>วันนัดหมาย</th>
+                            <th>หมายเลขคดี</th>
+                            <th>ประเภทนัด</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-danger">10 ก.ค. 2026</span></td>
+                            <td>ผบ.552/2026</td>
+                            <td>ยื่นคำให้การจำเลย (นัดสุดท้าย)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-warning">15 ก.ค. 2026</span></td>
+                            <td>พ.1024/2025</td>
+                            <td>สืบพยานโจทก์นัดแรก (ศาลแพ่ง)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="col">
+            <div class="card" style="margin-bottom:0;">
+                <h4 style="margin:0 0 10px 0; color:#166534;">📊 สถิติคดีความในสำนักงาน (Case Metrics)</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>สถานะปัจจุบัน</th>
+                            <th>จำนวนคดี</th>
+                            <th>สัดส่วน</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-primary">กำลังดำเนินกระบวนพิจารณา</span></td>
+                            <td>14 คดี</td>
+                            <td>70%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-warning">ชั้นอุทธรณ์/ฎีกา</span></td>
+                            <td>4 คดี</td>
+                            <td>20%</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-success">ปิดสำนวนถาวร</span></td>
+                            <td>2 คดี</td>
+                            <td>10%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <h3>C. ตารางรายการคดีความหลัก (The Core Case Ledger Table)</h3>
+    <p>เป็นตารางแบบ Responsive ที่จัดแนวข้อมูลอย่างเป็นระเบียบ พร้อมปุ่ม Action สำหรับกดเข้าไปดูไฟล์เอกสารในคดีได้ทันที</p>
+    
+    <table style="margin-top:15px;">
+        <thead>
+            <tr>
+                <th style="width: 15%;">รหัสระบบ</th>
+                <th style="width: 20%;">หมายเลขคดีดำ/แดง</th>
+                <th style="width: 25%;">ศาล / ประเภทคดี</th>
+                <th style="width: 25%;">ตัวความ/คู่ความ</th>
+                <th style="width: 15%;">สถานะ</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>CASE-20260701-001</strong></td>
+                <span class="math" style="display:none;"></span>
+                <td>อ.432/2026<br><small style="color: #ef4444;">(แดง อ.112/2026)</small></td>
+                <td>ศาลอาญาธนบุรี<br><small style="color: #64748b;">คดีอาญา (ฉ้อโกงประชาชน)</small></td>
+                <td>นายสมชาย (ลูกความ - จำเลย)<br><small style="color: #64748b;">vs บริษัท รวยไว จำกัด</small></td>
+                <td><span class="badge badge-warning">ชั้นอุทธรณ์</span></td>
+            </tr>
+            <tr>
+                <td><strong>CASE-20260615-004</strong></td>
+                <td>พ.911/2026<br><small style="color: #64748b;">(ยังไม่มีคดีแดง)</small></td>
+                <td>ศาลแพ่งกรุงเทพใต้<br><small style="color: #64748b;">คดีแพ่ง (ผิดสัญญาซื้อขาย)</small></td>
+                <td>บริษัท มีทรัพย์ (ลูกความ - โจทก์)<br><small style="color: #64748b;">vs นายขยัน ยิ้มแย้ม</small></td>
+                <td><span class="badge badge-primary">สืบพยาน</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>
+"""
+
+# Write HTML content to a file
+input_html_path = "case_system_architecture.html"
+output_pdf_path = "case_system_architecture.pdf"
+
+with open(input_html_path, "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+# Convert to PDF using WeasyPrint
+from weasyprint import HTML
+HTML(filename=input_html_path).write_pdf(output_pdf_path)
+
+print(f"PDF successfully generated at {output_pdf_path}")
