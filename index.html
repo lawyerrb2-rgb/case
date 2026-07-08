@@ -803,17 +803,18 @@
         }
 
         // ฟังก์ชัน: เมื่อกดปุ่มแก้ไขในแถว ให้ดึงข้อมูลเก่านั้นมากางในช่องฟอร์มทันที
-        function openEditModal(case_id, black, red, court, type, amount, plaintiff, defendant, role, desc) {
+        function openEditModal(case_id, black, red, court, type, amount, desc, plaintiff, defendant, role) {
             document.getElementById('edit_case_id').value = case_id;
             document.getElementById('edit_black_number').value = black;
             document.getElementById('edit_red_number').value = red === 'null' ? '' : red;
             document.getElementById('edit_court_name').value = court;
             document.getElementById('edit_case_type').value = type;
             document.getElementById('edit_claim_amount').value = amount;
+            document.getElementById('edit_description').value = desc;
             document.getElementById('edit_plaintiff_name').value = plaintiff;
             document.getElementById('edit_defendant_name').value = defendant;
             document.getElementById('edit_client_role').value = role;
-            document.getElementById('edit_description').value = desc;
+            
             toggleEditModal(true);
         }
 
