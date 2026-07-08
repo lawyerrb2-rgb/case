@@ -237,6 +237,29 @@
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ทุนทรัพย์ (บาท)</label>
                         <input type="number" step="0.01" id="edit_claim_amount" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
                     </div>
+                    <!-- 👥 ส่วนที่เพิ่มใหม่: ข้อมูลคู่ความของคดี -->
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">👥 ข้อมูลคู่ความและการรับงาน</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อโจทก์/ผู้ร้อง *</label>
+                            <input type="text" id="plaintiff_name" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" placeholder="ระบุชื่อโจทก์ หรือผู้ร้อง" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อจำเลย/ผู้คัดค้าน *</label>
+                            <input type="text" id="defendant_name" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" placeholder="ระบุชื่อจำเลย หรือผู้คัดค้าน" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">สถานะฝั่งลูกความของคุณทนาย *</label>
+                        <select id="client_role" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
+                            <option value="โจทก์">โจทก์ (เราเป็นทนายโจทก์)</option>
+                            <option value="จำเลย">จำเลย (เราเป็นทนายจำเลย)</option>
+                            <option value="ผู้ร้อง">ผู้ร้อง (เราเป็นทนายผู้ร้องขอต่อศาล)</option>
+                            <option value="ผู้คัดค้าน">ผู้คัดค้าน (เราเป็นทนายฝั่งยื่นคำคัดค้าน)</option>
+                        </select>
+                    </div>
+                </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สรุปข้อหา/พฤติการณ์คดี</label>
@@ -247,6 +270,44 @@
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">บันทึกการแก้ไข</button>
                 </div>
             </form>
+        </div>
+    </div>
+    <!-- 🔍 หน้าต่าง Pop-up: แสดงรายละเอียดคดีแบบเจาะลึก (View Case Details) -->
+    <div id="viewDetailsModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg transform transition-all overflow-hidden">
+            <div class="bg-slate-950 text-white px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h3 class="text-md font-bold" id="view_title_id">รายละเอียดคดีความ</h3>
+                    <p class="text-xs text-slate-400" id="view_title_court"></p>
+                </div>
+                <button onclick="toggleViewModal(false)" class="text-slate-400 hover:text-white text-2xl font-semibold">&times;</button>
+            </div>
+            <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <div class="grid grid-cols-2 gap-4 border-b border-slate-100 pb-3">
+                    <div><span class="text-xs text-slate-400 block font-medium">หมายเลขคดีดำ</span><b class="text-slate-800" id="view_black_num"></b></div>
+                    <div><span class="text-xs text-slate-400 block font-medium">หมายเลขคดีแดง</span><b class="text-red-500" id="view_red_num"></b></div>
+                </div>
+                
+                <!-- 👥 โซนจัดแสดงข้อมูลคู่ความที่ลงลึกรายละเอียด -->
+                <div class="bg-blue-50/50 rounded-xl p-4 border border-blue-100 space-y-3">
+                    <span class="text-xs font-bold text-blue-700 tracking-wider uppercase block">👥 ข้อมูลคู่ความในคดี</span>
+                    <div class="grid grid-cols-1 gap-2 text-sm text-slate-700">
+                        <div><b>ฝ่ายโจทก์ / ผู้ร้อง:</b> <span id="view_plaintiff"></span></div>
+                        <div><b>ฝ่ายจำเลย / ผู้คัดค้าน:</b> <span id="view_defendant"></span></div>
+                        <div class="pt-2 border-t border-blue-100 text-xs font-medium text-slate-600">
+                            💼 ฝ่ายลูกความสำนักงานเรา: <span id="view_client_role" class="bg-blue-600 text-white font-bold px-2 py-0.5 rounded ml-1"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <span class="text-xs text-slate-400 block font-medium">ประเด็นข้อหา / รายละเอียดพฤติการณ์</span>
+                    <p class="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 leading-relaxed whitespace-pre-line" id="view_desc"></p>
+                </div>
+            </div>
+            <div class="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-end">
+                <button onclick="toggleViewModal(false)" class="bg-slate-900 text-white text-xs font-medium py-2 px-4 rounded-lg hover:bg-slate-800 transition-colors">ปิดหน้าต่าง</button>
+            </div>
         </div>
     </div>
     </main>
@@ -411,6 +472,10 @@
                             
                             <td class="px-6 py-4">${statusBadge}</td>
                             <td class="px-6 py-4 text-center">
+                                <button onclick="openViewModal('${c.case_id}', '${c.black_number}', '${c.red_number || '—'}', '${c.court_name}', \`${c.plaintiff_name || 'ไม่ระบุ'}\`, \`${c.defendant_name || 'ไม่ระบุ'}\`, '${c.client_role || 'ไม่ระบุ'}', \`${c.description || 'ไม่มีรายละเอียดเพิ่มเติม'}\`)" 
+                                    class="text-xs bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 px-2 py-1.5 rounded-lg font-medium transition-colors">
+                                    🔎 เปิดดู
+                                </button>
                                 <button onclick="openEditModal('${c.case_id}', '${c.black_number}', '${c.red_number || ''}', '${c.court_name}', '${c.case_type}', ${c.claim_amount || 0}, \`${c.description || ''}\`)" 
                                     class="text-xs bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 px-2 py-1.5 rounded-lg font-medium transition-colors">
                                     📝 แก้ไข
@@ -474,6 +539,9 @@
             const case_type = document.getElementById('case_type').value;
             const claim_amount = parseFloat(document.getElementById('claim_amount').value) || 0;
             const description = document.getElementById('description').value;
+            const plaintiff_name = document.getElementById('plaintiff_name').value;
+            const defendant_name = document.getElementById('defendant_name').value;
+            const client_role = document.getElementById('client_role').value;
 
             // ดึงค่าข้อมูลวันนัดหมายที่เพิ่มเข้ามาใหม่
             const event_date = document.getElementById('event_date').value;
@@ -483,7 +551,7 @@
                 // ขั้นตอนที่ 1: บันทึกข้อมูลเข้าตารางคดี (cases) และสั่งให้ส่งข้อมูลคดีที่พึ่งบันทึกสำเร็จกลับมาตัวแปร เพื่อเอารหัสรหัสคดี (case_id)
                 const { data: newCase, error: caseError } = await supabaseClient
                     .from('cases')
-                    .insert([{ black_number, red_number, court_name, case_type, claim_amount, description, case_status: 'Draft' }])
+                    .insert([{ black_number, red_number, court_name, case_type, claim_amount, description, case_status: 'Draft', plaintiff_name, defendant_name, client_role }])
                     .select(); // ดึงข้อมูลแถวที่เพิ่มลงฐานข้อมูลกลับมาทันที
 
                 if (caseError) throw caseError;
@@ -676,6 +744,25 @@
                 modal.classList.add('hidden');
                 document.getElementById('editCaseForm').reset();
             }
+        }
+        // ฟังก์ชันควบคุมเปิด-ปิด หน้าต่างรายละเอียด
+        function toggleViewModal(show) {
+            const modal = document.getElementById('viewDetailsModal');
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        // ฟังก์ชันสั่งกางข้อมูลเพื่อแสดงรายละเอียดคู่ความเมื่อกดปุ่ม "เปิดดู"
+        function openViewModal(id, black, red, court, plaintiff, defendant, role, desc) {
+            document.getElementById('view_title_id').innerText = "📊 รายละเอียดเชิงลึกคดี: " + id;
+            document.getElementById('view_title_court').innerText = "🏛️ สังกัดศาล: " + court;
+            document.getElementById('view_black_num').innerText = black;
+            document.getElementById('view_red_num').innerText = red;
+            document.getElementById('view_plaintiff').innerText = plaintiff;
+            document.getElementById('view_defendant').innerText = defendant;
+            document.getElementById('view_client_role').innerText = role;
+            document.getElementById('view_desc').innerText = desc;
+            toggleViewModal(true);
         }
 
         // ฟังก์ชัน: เมื่อกดปุ่มแก้ไขในแถว ให้ดึงข้อมูลเก่านั้นมากางในช่องฟอร์มทันที
