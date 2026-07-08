@@ -575,7 +575,20 @@
                 // ขั้นตอนที่ 1: บันทึกข้อมูลเข้าตารางคดี (cases) และสั่งให้ส่งข้อมูลคดีที่พึ่งบันทึกสำเร็จกลับมาตัวแปร เพื่อเอารหัสรหัสคดี (case_id)
                 const { data: newCase, error: caseError } = await supabaseClient
                     .from('cases')
-                    .insert([{ black_number, red_number, court_name, case_type, claim_amount, description, case_status: 'Draft', plaintiff_name, defendant_name, client_role }])
+                    .insert([{ 
+                                black_number: black_number, 
+                                red_number: red_number, 
+                                court_name: court_name, 
+                                case_type: case_type, 
+                                claim_amount: claim_amount, 
+                                description: description, 
+                                case_status: 'Draft', 
+    
+                                // ⚠️ ลองเขียนแยกฝั่งซ้าย-ขวาแบบนี้ดูครับ
+                                plaintiff_name: plaintiff_name,  
+                                defendant_name: defendant_name,  
+                                client_role: client_role 
+                            }])
                     .select(); // ดึงข้อมูลแถวที่เพิ่มลงฐานข้อมูลกลับมาทันที
 
                 if (caseError) throw caseError;
