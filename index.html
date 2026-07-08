@@ -360,7 +360,7 @@
         // ฟังก์ชัน: ดึงกำหนดวันนัดหมายมาโชว์ในกล่อง Dashboard ซ้าย[cite: 1]
         async function fetchSchedules() {
             try {
-                const { data: schedules, error } = await supabase
+                const { data: schedules, error } = await supabaseClient
                     .from('schedules')
                     .select('event_date, event_type, case_id')
                     .eq('is_completed', false)
