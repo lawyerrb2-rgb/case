@@ -265,6 +265,19 @@
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สรุปข้อหา/พฤติการณ์คดี</label>
                     <textarea id="edit_description" rows="3" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500"></textarea>
                 </div>
+                <div class="border-t border-dashed border-slate-200 pt-3">
+                    <h4 class="text-xs font-bold text-amber-600 mb-2">🗓️ แก้ไขกำหนดนัดหมายศาล (นัดแรก)</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">วันและเวลานัดหมาย *</label>
+                            <input type="datetime-local" id="edit_event_date" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ประเภทนัดหมาย *</label>
+                            <input type="text" id="edit_event_type" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
+                        </div>
+                    </div>
+                </div>
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
                     <button type="button" onclick="toggleEditModal(false)" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">บันทึกการแก้ไข</button>
@@ -500,7 +513,7 @@
                                     class="text-xs bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 px-2 py-1.5 rounded-lg font-medium transition-colors">
                                     🔎 เปิดดู
                                 </button>
-                                <button onclick="openEditModal('${c.case_id}', '${c.black_number}', '${c.red_number || ''}', '${c.court_name}', '${c.case_type}', ${c.claim_amount || 0}, \`${c.description || ''}\`, \`${c.plaintiff_name || ''}\`, \`${c.defendant_name || ''}\`, '${c.client_role || 'โจทก์'}')" 
+                                <button onclick="openEditModal('${c.case_id}', '${c.black_number}', '${c.red_number || ''}', '${c.court_name}', '${c.case_type}', ${c.claim_amount || 0}, \`${c.description || ''}\`, \`${c.plaintiff_name || ''}\`, \`${c.defendant_name || ''}\`, '${c.client_role || 'โจทก์'}\')" 
                                     class="text-xs bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 px-2 py-1.5 rounded-lg font-medium transition-colors">
                                     📝 แก้ไข
                                 </button>
@@ -803,7 +816,8 @@
         }
 
         // ฟังก์ชัน: เมื่อกดปุ่มแก้ไขในแถว ให้ดึงข้อมูลเก่านั้นมากางในช่องฟอร์มทันที
-        function openEditModal(case_id, black, red, court, type, amount, desc, plaintiff, defendant, role) {
+        // ฟังก์ชัน: เมื่อกดปุ่มแก้ไข ให้ดึงข้อมูลเก่ารวมถึงวันนัดเดิมมากางบนหน้าต่างแก้ไข
+        async function openEditModal(case_id, black, red, court, type, amount, desc, plaintiff, defendant, role) {
             document.getElementById('edit_case_id').value = case_id;
             document.getElementById('edit_black_number').value = black;
             document.getElementById('edit_red_number').value = red === 'null' ? '' : red;
@@ -814,11 +828,39 @@
             document.getElementById('edit_plaintiff_name').value = plaintiff;
             document.getElementById('edit_defendant_name').value = defendant;
             document.getElementById('edit_client_role').value = role;
-            
+
+            // 🔍 ดึงวันนัดหมายนัดแรกสุดที่ผูกกับคดีนี้จากตาราง schedules เพื่อนำมาแสดงผลในช่องแก้ไข
+            try {
+                const { data: scheduleData, error } = await supabaseClient
+                    .from('schedules')
+                    .select('event_date, event_type')
+                    .eq('case_id', case_id)
+                    .order('created_at', { ascending: true }) // นำนัดแรกสุดขึ้นมาแก้
+                    .limit(1);
+
+                if (!error && scheduleData && scheduleData.length > 0) {
+                    // แปลงเวลา ISO จากฐานข้อมูลให้เข้ากับรูปแบบของ input datetime-local (YYYY-MM-DDTHH:MM)
+                    const dbDate = new Date(scheduleData[0].event_date);
+                    
+                    // ปรับเวลาให้ตรงกับ Local Timezone ของเครื่องเพื่อไม่ให้เวลาเพี้ยนตอนกางข้อมูล
+                    const tzOffset = dbDate.getTimezoneOffset() * 60000;
+                    const localISOTime = (new Date(dbDate.getTime() - tzOffset)).toISOString().slice(0, 16);
+                    
+                    document.getElementById('edit_event_date').value = localISOTime;
+                    document.getElementById('edit_event_type').value = scheduleData[0].event_type;
+                } else {
+                    document.getElementById('edit_event_date').value = '';
+                    document.getElementById('edit_event_type').value = '';
+                }
+            } catch (err) {
+                console.error("ไม่สามารถดึงข้อมูลวันนัดเดิมได้:", err.message);
+            }
+
             toggleEditModal(true);
         }
 
         // ฟังก์ชัน: ส่งคำสั่งแก้ไขอัปเดตข้อมูลทับลงตาราง cases บน Supabase
+        // ฟังก์ชัน: บันทึกข้อมูลแก้ไขคดีและวันนัดพร้อมกัน
         async function updateCaseDetails(e) {
             e.preventDefault();
             const case_id = document.getElementById('edit_case_id').value;
@@ -832,17 +874,43 @@
             const defendant_name = document.getElementById('edit_defendant_name').value;
             const client_role = document.getElementById('edit_client_role').value;
 
+            // ดึงค่าวันนัดหมายฝั่งแก้ไข
+            const event_date = document.getElementById('edit_event_date').value;
+            const event_type = document.getElementById('edit_event_type').value;
+
             try {
-                const { error } = await supabaseClient
+                // 1. อัปเดตข้อมูลตารางคดีหลัก (cases)
+                const { error: caseUpdateError } = await supabaseClient
                     .from('cases')
-                    .update({ black_number, red_number, court_name, case_type, claim_amount, description, plaintiff_name, defendant_name, client_role})
+                    .update({ black_number, red_number, court_name, case_type, claim_amount, description, plaintiff_name, defendant_name, client_role })
                     .eq('case_id', case_id);
 
-                if (error) throw error;
+                if (caseUpdateError) throw caseUpdateError;
 
-                alert("🎉 แก้ไขข้อมูลคดีความเรียบร้อยแล้ว!");
+                // 2. ค้นหาและอัปเดตนัดหมายนัดแรกสุดในตารางปฏิทิน (schedules)
+                const { data: firstSchedule } = await supabaseClient
+                    .from('schedules')
+                    .select('id')
+                    .eq('case_id', case_id)
+                    .order('created_at', { ascending: true })
+                    .limit(1);
+
+                if (firstSchedule && firstSchedule.length > 0) {
+                    const { error: scheduleUpdateError } = await supabaseClient
+                        .from('schedules')
+                        .update({
+                            event_date: new Date(event_date).toISOString(),
+                            event_type: event_type
+                        })
+                        .eq('id', firstSchedule[0].id);
+
+                    if (scheduleUpdateError) throw scheduleUpdateError;
+                }
+
+                alert("🎉 แก้ไขข้อมูลคดีความและกำหนดนัดหมายเรียบร้อยแล้ว!");
                 toggleEditModal(false);
-                fetchCases(); // รีโหลดตารางข้อมูลแสดงผลใหม่ทันที
+                fetchCases();      // รีโหลดตารางรายการคดีความ
+                fetchSchedules();  // รีโหลดตารางปฏิทินแจ้งเตือนหน้าแรก
 
             } catch (err) {
                 alert("❌ เกิดข้อผิดพลาดในการแก้ไขข้อมูล: " + err.message);
