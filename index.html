@@ -861,8 +861,11 @@
 
         // ฟังก์ชัน: ส่งคำสั่งแก้ไขอัปเดตข้อมูลทับลงตาราง cases บน Supabase
         // ฟังก์ชัน: บันทึกข้อมูลแก้ไขคดีและวันนัดพร้อมกัน
+        // ฟังก์ชัน: บันทึกข้อมูลแก้ไขคดีและวันนัดพร้อมกัน (เวอร์ชันแก้ไขเรื่องโซนเวลาไม่ยอมบันทึก)
         async function updateCaseDetails(e) {
             e.preventDefault();
+            
+            // 1. ดึงค่าจากฟอร์มแก้ไขคดีหลัก
             const case_id = document.getElementById('edit_case_id').value;
             const black_number = document.getElementById('edit_black_number').value;
             const red_number = document.getElementById('edit_red_number').value || null;
@@ -874,12 +877,28 @@
             const defendant_name = document.getElementById('edit_defendant_name').value;
             const client_role = document.getElementById('edit_client_role').value;
 
-            // ดึงค่าวันนัดหมายฝั่งแก้ไข
-            const event_date = document.getElementById('edit_event_date').value;
+            // 2. ดึงค่าวันนัดหมายและประเภทนัดฝั่งแก้ไข
+            const event_date_raw = document.getElementById('edit_event_date').value;
             const event_type = document.getElementById('edit_event_type').value;
 
             try {
-                // 1. อัปเดตข้อมูลตารางคดีหลัก (cases)
+                // --- จุดจัดการเรื่องเวลาขจัดบั๊กไม่ยอมอัปเดต ---
+                let formattedISOData = null;
+                if (event_date_raw) {
+                    const parsedDate = new Date(event_date_raw);
+                    // เช็กว่าแปลงวันที่ได้สำเร็จหรือไม่ ป้องกันข้อผิดพลาด Invalid Date
+                    if (!isNaN(parsedDate.getTime())) {
+                        formattedISOData = parsedDate.toISOString();
+                    }
+                }
+
+                if (!formattedISOData) {
+                    alert("⚠️ รูปแบบวันและเวลานัดหมายไม่ถูกต้อง โปรดตรวจสอบอีกครั้ง");
+                    return;
+                }
+                // ----------------------------------------
+
+                // ขั้นตอนที่ 1: สั่งอัปเดตข้อมูลตารางคดีหลัก (cases)
                 const { error: caseUpdateError } = await supabaseClient
                     .from('cases')
                     .update({ black_number, red_number, court_name, case_type, claim_amount, description, plaintiff_name, defendant_name, client_role })
@@ -887,33 +906,49 @@
 
                 if (caseUpdateError) throw caseUpdateError;
 
-                // 2. ค้นหาและอัปเดตนัดหมายนัดแรกสุดในตารางปฏิทิน (schedules)
-                const { data: firstSchedule } = await supabaseClient
+                // ขั้นตอนที่ 2: ค้นหานัดหมายแรกสุดที่ผูกกับคดีนี้ในตารางปฏิทิน (schedules) เพื่ออัปเดตตาม
+                const { data: firstSchedule, error: findError } = await supabaseClient
                     .from('schedules')
                     .select('id')
                     .eq('case_id', case_id)
                     .order('created_at', { ascending: true })
                     .limit(1);
 
+                if (findError) throw findError;
+
+                // ถ้าเจอนัดหมายเดิม ให้ทำการ UPDATE ทับ
                 if (firstSchedule && firstSchedule.length > 0) {
                     const { error: scheduleUpdateError } = await supabaseClient
                         .from('schedules')
                         .update({
-                            event_date: new Date(event_date).toISOString(),
+                            event_date: formattedISOData, // ส่งค่า ISO ที่จัดการเรื่องบราวเซอร์เอ๋อแล้วเข้าไป
                             event_type: event_type
                         })
                         .eq('id', firstSchedule[0].id);
 
                     if (scheduleUpdateError) throw scheduleUpdateError;
+                } else {
+                    // 💡 แอบแถมกรณีเผื่อคดีนั้น "ไม่เคยลงนัดหมายไว้เลย" ให้สร้าง (Insert) นัดใหม่ขึ้นมาให้เลยเพื่อไม่ให้ข้อมูลหลุดหาย
+                    const { error: scheduleInsertError } = await supabaseClient
+                        .from('schedules')
+                        .insert([{
+                            case_id: case_id,
+                            event_date: formattedISOData,
+                            event_type: event_type,
+                            remind_days: 7
+                        }]);
+                    
+                    if (scheduleInsertError) throw scheduleInsertError;
                 }
 
                 alert("🎉 แก้ไขข้อมูลคดีความและกำหนดนัดหมายเรียบร้อยแล้ว!");
                 toggleEditModal(false);
-                fetchCases();      // รีโหลดตารางรายการคดีความ
-                fetchSchedules();  // รีโหลดตารางปฏิทินแจ้งเตือนหน้าแรก
+                fetchCases();      // รีโหลดตารางรายการคดีความทั้งหมดใหม่
+                fetchSchedules();  // รีโหลดตารางปฏิทินเตือนภัยด้านบนสุด
 
             } catch (err) {
                 alert("❌ เกิดข้อผิดพลาดในการแก้ไขข้อมูล: " + err.message);
+                console.error("Update Error Logs:", err);
             }
         }
     </script>
