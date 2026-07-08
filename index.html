@@ -386,10 +386,10 @@
                     }
 
                     // จัดสไตล์สีตามสถานะคดี
-                    let statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-600">Draft</span>`;
-                    if(c.case_status === 'In_Progress') statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">In Progress</span>`;
-                    if(c.case_status === 'Appealing') statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700">Appealing</span>`;
-                    if(c.case_status === 'Closed') statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700">Closed</span>`;
+                    let statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-600">ร่างฟ้อง</span>`;
+                    if(c.case_status === 'In_Progress') statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">อยู่ระหว่างพิจารณาคดี</span>`;
+                    if(c.case_status === 'Appealing') statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700">อุทธรณ์/ฎีกา</span>`;
+                    if(c.case_status === 'Closed') statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700">ปิดคดี</span>`;
 
                     tbody.innerHTML += `
                         <tr class="hover:bg-slate-50 transition-colors">
