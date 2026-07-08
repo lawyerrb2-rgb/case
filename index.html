@@ -1,346 +1,330 @@
-import os
-
-# Create HTML content for the design preview/guide
-html_content = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>ระบบบริหารจัดการคดีความ (LawFirm Case Management System)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JusticeFlow - ระบบบริหารจัดการคดีความสำหรับทนายความ</title>
+    <!-- นำเข้า Tailwind CSS สำหรับจัดการ UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- นำเข้า Supabase SDK สำหรับเชื่อมต่อฐานข้อมูลโดยตรง -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- นำเข้า Font สวยๆ สำหรับใช้งาน -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @page {
-            size: A4;
-            margin: 15mm 12mm;
-            background-color: #f8fafc;
-        }
-        * {
-            box-sizing: border-box;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-        }
-        body {
-            margin: 0;
-            padding: 0;
-            color: #1e293b;
-            font-size: 10.5pt;
-            line-height: 1.5;
-            background-color: #f8fafc;
-        }
-        h1 {
-            font-size: 20pt;
-            color: #0f172a;
-            margin: 0 0 5px 0;
-            font-weight: 700;
-        }
-        h2 {
-            font-size: 14pt;
-            color: #1e3a8a;
-            border-left: 4px solid #2563eb;
-            padding-left: 8px;
-            margin: 25px 0 12px 0;
-            font-weight: 600;
-            page-break-after: avoid;
-        }
-        h3 {
-            font-size: 11.5pt;
-            color: #0f172a;
-            margin: 15px 0 8px 0;
-            font-weight: 600;
-            page-break-after: avoid;
-        }
-        p {
-            margin: 0 0 10px 0;
-            color: #475569;
-        }
-        .header-banner {
-            margin: -15mm -12mm 20px -12mm;
-            padding: 25px 12mm;
-            background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
-            color: #ffffff;
-        }
-        .header-banner h1 {
-            color: #ffffff;
-        }
-        .header-banner p {
-            color: #93c5fd;
-            margin: 0;
-            font-size: 11pt;
-        }
-        .card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 15px;
-            page-break-inside: avoid;
-        }
-        .grid-2 {
-            display: table;
-            width: 100%;
-            table-layout: fixed;
-            margin-bottom: 15px;
-        }
-        .col {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
-        }
-        .col:first-child {
-            padding-right: 10px;
-        }
-        .col:last-child {
-            padding-left: 10px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 10px 0;
-            font-size: 10pt;
-        }
-        th {
-            background-color: #f1f5f9;
-            color: #0f172a;
-            font-weight: 600;
-            text-align: left;
-            padding: 8px 10px;
-            border-bottom: 2px solid #cbd5e1;
-        }
-        td {
-            padding: 8px 10px;
-            border-bottom: 1px solid #e2e8f0;
-            color: #334155;
-            vertical-align: top;
-        }
-        tr:nth-child(even) td {
-            background-color: #f8fafc;
-        }
-        pre {
-            background-color: #0f172a;
-            color: #38bdf8;
-            padding: 12px;
-            border-radius: 6px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 9pt;
-            overflow: hidden;
-            margin: 10px 0;
-            white-space: pre-wrap;
-        }
-        .badge {
-            display: inline-block;
-            padding: 2px 6px;
-            font-size: 8.5pt;
-            font-weight: 600;
-            border-radius: 4px;
-        }
-        .badge-danger { background-color: #fee2e2; color: #991b1b; }
-        .badge-warning { background-color: #fef3c7; color: #92400e; }
-        .badge-success { background-color: #dcfce7; color: #166534; }
-        .badge-primary { background-color: #dbeafe; color: #1e40af; }
-        
-        .math {
-            font-family: 'Times New Roman', serif;
-            font-style: italic;
-            font-weight: bold;
-            color: #1e3a8a;
-        }
+        body { font-family: 'Sarabun', sans-serif; }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 min-h-screen flex flex-col">
 
-    <div class="header-banner">
-        <h1>ระบบจัดเก็บข้อมูลคดีความ (LawFirm Web App Architecture)</h1>
-        <p>พิมพ์เขียวสถาปัตยกรรมระบบฐานข้อมูล Supabase และการออกแบบหน้าจอผู้ใช้งานด้วย Tailwind CSS สำหรับทนายความ</p>
-    </div>
-
-    <h2>1. โครงสร้างฐานข้อมูลระดับโปรดักชัน (Supabase SQL Schema)</h2>
-    <p>สคริปต์ SQL ด้านล่างนี้ประกอบด้วยการสร้างตาราง (Tables), การตั้งค่าข้อจำกัด (Constraints), ความสัมพันธ์ (Foreign Keys) รวมถึงการเปิดใช้งานระบบความปลอดภัย <strong>Row Level Security (RLS)</strong> เพื่อปกป้องข้อมูลความลับของลูกความ</p>
-    
-    <pre>-- 1. ตารางคดีความ (cases)
-CREATE TABLE cases (
-    case_id TEXT PRIMARY KEY DEFAULT 'CASE-' || to_char(current_timestamp, 'YYYYMMDD-') || LPAD(nextval('cases_seq')::text, 4, '0'),
-    black_number TEXT NOT NULL,
-    red_number TEXT,
-    court_name TEXT NOT NULL,
-    case_type TEXT CHECK (case_type IN ('Civil', 'Criminal', 'Labor', 'Administrative', 'Other')),
-    case_status TEXT DEFAULT 'Draft' CHECK (case_status IN ('Draft', 'In_Progress', 'Appealing', 'Closed')),
-    claim_amount NUMERIC(15, 2) DEFAULT 0.00,
-    description TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
-);
-
--- 2. ตารางผู้เกี่ยวข้องในคดี (contacts)
-CREATE TABLE contacts (
-    contact_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    case_id TEXT REFERENCES cases(case_id) ON DELETE CASCADE,
-    full_name TEXT NOT NULL,
-    role TEXT CHECK (role IN ('Client_Plaintiff', 'Client_Defendant', 'Opponent', 'Witness', 'Other')),
-    citizen_id TEXT,
-    contact_info TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
-);
-
--- 3. ตารางตารางนัดหมายและปฏิทินคดี (schedules)
-CREATE TABLE schedules (
-    event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    case_id TEXT REFERENCES cases(case_id) ON DELETE CASCADE,
-    event_date TIMESTAMP WITH TIME ZONE NOT NULL,
-    event_type TEXT NOT NULL,
-    remind_days INT DEFAULT 7,
-    notes TEXT,
-    is_completed BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
-);
-
--- 4. ตารางจัดเก็บเอกสารทางกฎหมาย (documents)
-CREATE TABLE documents (
-    doc_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    case_id TEXT REFERENCES cases(case_id) ON DELETE CASCADE,
-    doc_name TEXT NOT NULL,
-    file_path TEXT NOT NULL, -- ลิงก์ไปยัง Supabase Storage Bucket
-    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
-);</pre>
-
-    <div class="card">
-        <h3>ข้อแนะนำด้านความปลอดภัยและการรักษาข้อมูลความลับ (Security & RLS)</h3>
-        <p>เนื่องจากข้อมูลทางกฎหมายมีความอ่อนไหวสูงมาก คุณทนายความต้องเปิดใช้งาน Row Level Security (RLS) เพื่อป้องกันไม่ให้บุคคลภายนอกเข้าถึงข้อมูลได้โดยตรง:</p>
-        <pre>-- เปิดใช้งาน RLS สำหรับทุกตาราง
-ALTER TABLE cases ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
-ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
-
--- ตัวอย่างสิทธิ์: อนุญาตให้ผู้ที่ล็อกอินผ่านระบบ (Authenticated Users) เข้าถึงข้อมูลได้เท่านั้น
-CREATE POLICY "Allow authenticated users access" ON cases 
-    FOR ALL TO authenticated USING (true);</pre>
-    </div>
-
-    <h2>2. สถาปัตยกรรมหน้าจอผู้ใช้งาน (Tailwind CSS UI Architecture)</h2>
-    <p>การออกแบบหน้าจอเน้นความสะอาด รวดเร็ว และเน้นการมองเห็น "นัดหมายสำคัญ" และ "สถานะคดี" ได้ทันทีโดยไม่ต้องคลิกหลายครั้ง โทนสีเน้นสีกรมท่า (Slate/Navy) เพื่อสร้างความน่าเชื่อถือ</p>
-
-    <h3>A. ส่วนหัวและแถบค้นหาด่วน (Sticky Header & Global Search)</h3>
-    <p>องค์ประกอบด้านบนสุดจะมีฟิลด์ค้นหาแบบสากล (Global Search) ที่ดึงความสามารถของ Full-Text Search บน Supabase มาใช้ ทำให้ค้นหาเจอทั้งชื่อลูกความ เลขคดีดำ หรือชื่อศาลได้พร้อมกัน</p>
-    
-    <div class="card">
-        <strong>โครงสร้างโค้ดส่วนค้นหา (Tailwind class structure):</strong>
-        <pre>&lt;div class="sticky top-0 z-50 flex items-center justify-between bg-slate-900 px-6 py-4 text-white shadow-md"&gt;
-    &lt;div class="flex items-center space-x-3"&gt;
-        &lt;span class="text-xl font-bold tracking-wider text-blue-400"&gt;JusticeFlow&lt;/span&gt;
-        &lt;span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded"&gt;v1.0&lt;/span&gt;
-    &lt;/div&gt;
-    &lt;div class="w-1/3 relative"&gt;
-        &lt;input type="text" placeholder="ค้นหาด่วน (ชื่อลูกความ, เลขคดีดำ, ศาล)..." class="w-full bg-slate-800 text-sm text-slate-200 pl-10 pr-4 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500" /&gt;
-    &lt;/div&gt;
-&lt;/div&gt;</pre>
-    </div>
-
-    <h3>B. แดชบอร์ดสรุปงานและการแจ้งเตือนด่วน (Executive Dashboard Elements)</h3>
-    <p>แบ่งหน้าจอออกเป็นบล็อกข้อมูลเพื่อให้ง่ายต่อการประเมินสถานการณ์รายวัน</p>
-    
-    <div class="grid-2">
-        <div class="col">
-            <div class="card" style="margin-bottom:0;">
-                <h4 style="margin:0 0 10px 0; color:#1e3a8a;">🚨 กำหนดนัดหมายและวันวิกฤต (Upcoming Deadlines)</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>วันนัดหมาย</th>
-                            <th>หมายเลขคดี</th>
-                            <th>ประเภทนัด</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><span class="badge badge-danger">10 ก.ค. 2026</span></td>
-                            <td>ผบ.552/2026</td>
-                            <td>ยื่นคำให้การจำเลย (นัดสุดท้าย)</td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge badge-warning">15 ก.ค. 2026</span></td>
-                            <td>พ.1024/2025</td>
-                            <td>สืบพยานโจทก์นัดแรก (ศาลแพ่ง)</td>
-                        </tr>
-                    </tbody>
-                </table>
+    <!-- 1. Sticky Header & Global Search[cite: 1] -->
+    <header class="sticky top-0 z-50 flex flex-col md:flex-row items-center justify-between bg-slate-950 px-6 py-4 text-white shadow-xl border-b border-slate-800">
+        <div class="flex items-center space-x-3 mb-4 md:mb-0">
+            <div class="bg-blue-600 p-2 rounded-lg text-white font-bold tracking-wider text-xl shadow-md shadow-blue-900/40">⚖️</div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wide text-white">JusticeFlow</h1>
+                <p class="text-xs text-slate-400">ระบบบริหารจัดการคดีความสำนักงานกฎหมาย</p>
             </div>
         </div>
+        <!-- แถบค้นหาด่วน ค้นหาเรียลไทม์[cite: 1] -->
+        <div class="w-full md:w-1/3 relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
+            <input type="text" id="globalSearch" oninput="fetchCases()" placeholder="ค้นหาด่วน (เลขคดีดำ, ศาล, รายละเอียด)..." 
+                class="w-full bg-slate-900 text-sm text-slate-200 pl-10 pr-4 py-2.5 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner" />
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
         
-        <div class="col">
-            <div class="card" style="margin-bottom:0;">
-                <h4 style="margin:0 0 10px 0; color:#166534;">📊 สถิติคดีความในสำนักงาน (Case Metrics)</h4>
-                <table>
+        <!-- 2. Dashboard Section: Deadlines & Metrics[cite: 1] -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- การแจ้งเตือนนัดหมายวิกฤต[cite: 1] -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:col-span-2 flex flex-col">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                    <h2 class="font-bold text-slate-800 flex items-center gap-2">🚨 กำหนดนัดหมายสำคัญที่กำลังจะถึง</h2>
+                    <span class="bg-red-50 text-red-600 text-xs px-2.5 py-1 rounded-full font-medium border border-red-100">เรียลไทม์</span>
+                </div>
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="text-slate-500 border-b border-slate-100">
+                                <th class="pb-2 font-medium">วันนัดหมาย</th>
+                                <th class="pb-2 font-medium">รหัสคดี</th>
+                                <th class="pb-2 font-medium">ประเภทนัดหมาย</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deadlineTableBody" class="text-slate-600 divide-y divide-slate-50">
+                            <!-- ข้อมูลจะถูกโหลดเข้าตรงนี้ด้วย JavaScript -->
+                            <tr><td colspan="3" class="py-4 text-center text-slate-400">กำลังโหลดข้อมูลปฏิทินนัดหมาย...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- สถิติคดีความย่อ[cite: 1] -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                <div>
+                    <h2 class="font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4">📊 สถานะคดีในความรับผิดชอบ</h2>
+                    <div class="space-y-3.5" id="metricsContainer">
+                        <!-- โหลดข้อมูลสถิติด้วย JavaScript -->
+                        <p class="text-center text-slate-400 py-4">กำลังคำนวณสถิติ...</p>
+                    </div>
+                </div>
+                <button onclick="toggleModal(true)" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
+                    ➕ บันทึกข้อมูลคดีใหม่
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Core Case Ledger Table[cite: 1] -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4 mb-4 gap-3">
+                <h2 class="font-bold text-lg text-slate-900">🗂️ ทะเบียนคดีความทั้งหมด</h2>
+                <div class="flex items-center gap-2">
+                    <select id="filterStatus" onchange="fetchCases()" class="bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
+                        <option value="ALL">แสดงสถานะทั้งหมด</option>
+                        <option value="Draft">Draft (ร่างคำฟ้อง)</option>
+                        <option value="In_Progress">In Progress (พิจารณาคดี)</option>
+                        <option value="Appealing">Appealing (ชั้นอุทธรณ์/ฎีกา)</option>
+                        <option value="Closed">Closed (ปิดคดีแล้ว)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
                     <thead>
-                        <tr>
-                            <th>สถานะปัจจุบัน</th>
-                            <th>จำนวนคดี</th>
-                            <th>สัดส่วน</th>
+                        <tr class="bg-slate-50 text-slate-700 border-b border-slate-200">
+                            <th class="p-3 font-semibold rounded-l-lg">รหัสระบบ</th>
+                            <th class="p-3 font-semibold">หมายเลขคดีดำ/แดง</th>
+                            <th class="p-3 font-semibold">ศาล / ประเภทคดี</th>
+                            <th class="p-3 font-semibold">ทุนทรัพย์ (บาท)</th>
+                            <th class="p-3 font-semibold rounded-r-lg">สถานะ</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td><span class="badge badge-primary">กำลังดำเนินกระบวนพิจารณา</span></td>
-                            <td>14 คดี</td>
-                            <td>70%</td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge badge-warning">ชั้นอุทธรณ์/ฎีกา</span></td>
-                            <td>4 คดี</td>
-                            <td>20%</td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge badge-success">ปิดสำนวนถาวร</span></td>
-                            <td>2 คดี</td>
-                            <td>10%</td>
-                        </tr>
+                    <tbody id="caseTableBody" class="divide-y divide-slate-100 text-slate-600">
+                        <!-- โหลดข้อมูลด้วย JavaScript จากตาราง Cases -->
+                        <tr><td colspan="5" class="p-4 text-center text-slate-400">กำลังเชื่อมต่อฐานข้อมูล Supabase...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
+    </main>
+
+    <!-- 4. Modal: บันทึกข้อมูลคดีความใหม่ -->
+    <div id="caseModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl max-h-[90vh] overflow-y-auto transform transition-all">
+            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h3 class="text-lg font-bold text-slate-900">📝 เพิ่มรายละเอียดคดีความใหม่</h3>
+                <button onclick="toggleModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
+            </div>
+            <form id="caseForm" onsubmit="saveCase(event)" class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">หมายเลขคดีดำ *</label>
+                        <input type="text" id="black_number" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น ผบ.552/2569" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">หมายเลขคดีแดง (ถ้ามี)</label>
+                        <input type="text" id="red_number" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น พ.112/2569" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ชื่อศาล *</label>
+                    <input type="text" id="court_name" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น ศาลแพ่งกรุงเทพใต้" />
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ประเภทคดี</label>
+                        <select id="case_type" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
+                            <option value="Civil">Civil (คดีแพ่ง)</option>
+                            <option value="Criminal">Criminal (คดีอาญา)</option>
+                            <option value="Labor">Labor (คดีแรงงาน)</option>
+                            <option value="Administrative">Administrative (คดีปกครอง)</option>
+                            <option value="Other">Other (คดีอื่นๆ)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ทุนทรัพย์ (บาท)</label>
+                        <input type="number" step="0.01" id="claim_amount" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="0.00" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สรุปข้อหา/พฤติการณ์คดี</label>
+                    <textarea id="description" rows="3" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="ระบุประเด็นสำคัญประจำคดีโดยย่อ..."></textarea>
+                </div>
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="toggleModal(false)" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <h3>C. ตารางรายการคดีความหลัก (The Core Case Ledger Table)</h3>
-    <p>เป็นตารางแบบ Responsive ที่จัดแนวข้อมูลอย่างเป็นระเบียบ พร้อมปุ่ม Action สำหรับกดเข้าไปดูไฟล์เอกสารในคดีได้ทันที</p>
-    
-    <table style="margin-top:15px;">
-        <thead>
-            <tr>
-                <th style="width: 15%;">รหัสระบบ</th>
-                <th style="width: 20%;">หมายเลขคดีดำ/แดง</th>
-                <th style="width: 25%;">ศาล / ประเภทคดี</th>
-                <th style="width: 25%;">ตัวความ/คู่ความ</th>
-                <th style="width: 15%;">สถานะ</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>CASE-20260701-001</strong></td>
-                <span class="math" style="display:none;"></span>
-                <td>อ.432/2026<br><small style="color: #ef4444;">(แดง อ.112/2026)</small></td>
-                <td>ศาลอาญาธนบุรี<br><small style="color: #64748b;">คดีอาญา (ฉ้อโกงประชาชน)</small></td>
-                <td>นายสมชาย (ลูกความ - จำเลย)<br><small style="color: #64748b;">vs บริษัท รวยไว จำกัด</small></td>
-                <td><span class="badge badge-warning">ชั้นอุทธรณ์</span></td>
-            </tr>
-            <tr>
-                <td><strong>CASE-20260615-004</strong></td>
-                <td>พ.911/2026<br><small style="color: #64748b;">(ยังไม่มีคดีแดง)</small></td>
-                <td>ศาลแพ่งกรุงเทพใต้<br><small style="color: #64748b;">คดีแพ่ง (ผิดสัญญาซื้อขาย)</small></td>
-                <td>บริษัท มีทรัพย์ (ลูกความ - โจทก์)<br><small style="color: #64748b;">vs นายขยัน ยิ้มแย้ม</small></td>
-                <td><span class="badge badge-primary">สืบพยาน</span></td>
-            </tr>
-        </tbody>
-    </table>
+    <!-- 📜 5. JavaScript ส่วนควบคุมการทำงานหลังบ้านร่วมกับ Supabase -->
+    <script>
+        // 🔒 นำข้อมูล API คีย์ของตารางคดีใน Supabase มาใส่ตรงนี้
+        const SUPABASE_URL = "YOUR_SUPABASE_URL"; 
+        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; 
+        
+        // เริ่มต้นสร้างตัวแปร Client เชื่อมต่อฐานข้อมูล
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // เปิด-ปิด หน้าต่างกรอกข้อมูลคดีใหม่
+        function toggleModal(show) {
+            const modal = document.getElementById('caseModal');
+            if (show) modal.classList.remove('hidden');
+            else {
+                modal.classList.add('hidden');
+                document.getElementById('caseForm').reset();
+            }
+        }
+
+        // ดึงข้อมูลและอัปเดตระบบ แสดงผลบนเว็บทันทีที่เปิดหน้า
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchCases();
+            fetchSchedules();
+        });
+
+        // ฟังก์ชันหลัก: ดึงข้อมูลคดีทั้งหมด (รองรับ Filter และ Search บาร์ด่วนด้วย)[cite: 1]
+        async function fetchCases() {
+            try {
+                const searchVal = document.getElementById('globalSearch').value;
+                const statusFilter = document.getElementById('filterStatus').value;
+
+                let query = supabase.from('cases').select('*').order('created_at', { ascending: false });
+
+                // ถ้ามีการเลือกคัดกรองสถานะ
+                if (statusFilter !== 'ALL') {
+                    query = query.eq('case_status', statusFilter);
+                }
+
+                // ถ้ามีการป้อนคำค้นหา (Full Text Search ย่อยๆ)[cite: 1]
+                if (searchVal.trim() !== "") {
+                    query = query.or(`black_number.ilike.%${searchVal}%,court_name.ilike.%${searchVal}%,description.ilike.%${searchVal}%`);
+                }
+
+                const { data: cases, error } = await query;
+                if (error) throw error;
+
+                const tableBody = document.getElementById('caseTableBody');
+                tableBody.innerHTML = '';
+
+                if (cases.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">❌ ไม่พบข้อมูลคดีความตามเงื่อนไขที่เลือก</td></tr>`;
+                    return;
+                }
+
+                // สรุปยอดเพื่อเอาไปพ่นในแดชบอร์ดฝั่งขวา
+                let counts = { Draft: 0, In_Progress: 0, Appealing: 0, Closed: 0 };
+
+                cases.forEach(c => {
+                    if(counts[c.case_status] !== undefined) counts[c.case_status]++;
+
+                    // ตั้งค่าสี Badge ให้ตรงกับความเร่งด่วนของคดี[cite: 1]
+                    let statusBadge = '';
+                    if (c.case_status === 'Draft') statusBadge = '<span class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-md">Draft (ร่างฟ้อง)</span>';
+                    else if (c.case_status === 'In_Progress') statusBadge = '<span class="px-2 py-1 text-xs font-semibold bg-blue-50 text-blue-700 rounded-md border border-blue-100">กำลังพิจารณาคดี</span>';
+                    else if (c.case_status === 'Appealing') statusBadge = '<span class="px-2 py-1 text-xs font-semibold bg-amber-50 text-amber-700 rounded-md border border-amber-100">ชั้นอุทธรณ์/ฎีกา</span>';
+                    else statusBadge = '<span class="px-2 py-1 text-xs font-semibold bg-green-50 text-green-700 rounded-md border border-green-100">ปิดคดีสำเร็จ</span>';
+
+                    const formattedAmount = new Intl.NumberFormat('th-TH', { style: 'decimal', minimumFractionDigits: 2 }).format(c.claim_amount);
+
+                    tableBody.innerHTML += `
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="p-3 font-medium text-slate-900">${c.case_id}</td>
+                            <td class="p-3">
+                                <div class="font-medium text-slate-800">${c.black_number}</div>
+                                ${c.red_number ? `<div class="text-xs text-red-500 font-medium">แดง: ${c.red_number}</div>` : '<div class="text-xs text-slate-400">ยังไม่มีคดีแดง</div>'}
+                            </td>
+                            <td class="p-3">
+                                <div class="text-slate-800">${c.court_name}</div>
+                                <div class="text-xs text-slate-400">${c.case_type}</div>
+                            </td>
+                            <td class="p-3 font-mono font-medium text-slate-700">${formattedAmount}</td>
+                            <td class="p-3">${statusBadge}</td>
+                        </tr>
+                    `;
+                });
+
+                // อัปเดตสถิติคดีความบน Dashboard ฝั่งขวา[cite: 1]
+                const total = cases.length;
+                document.getElementById('metricsContainer').innerHTML = `
+                    <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg text-sm"><span class="text-slate-600">📝 ร่างคำร้อง/คำฟ้อง</span> <span class="font-bold text-slate-800">${counts.Draft} คดี</span></div>
+                    <div class="flex justify-between items-center bg-blue-50/50 p-2.5 rounded-lg text-sm"><span class="text-blue-700">⚖️ กำลังสืบพยานในศาล</span> <span class="font-bold text-blue-700">${counts.In_Progress} คดี</span></div>
+                    <div class="flex justify-between items-center bg-amber-50/50 p-2.5 rounded-lg text-sm"><span class="text-amber-700">🏛️ อยู่ระหว่างอุทธรณ์/ฎีกา</span> <span class="font-bold text-amber-700">${counts.Appealing} คดี</span></div>
+                    <div class="flex justify-between items-center bg-green-50/50 p-2.5 rounded-lg text-sm"><span class="text-green-700">✅ ปิดสำนวนเสร็จสิ้น</span> <span class="font-bold text-green-700">${counts.Closed} คดี</span></div>
+                `;
+
+            } catch (err) {
+                console.error("เกิดข้อผิดพลาดในการโหลดคดี:", err.message);
+            }
+        }
+
+        // ฟังก์ชัน: ดึงกำหนดวันนัดหมายมาโชว์ในกล่อง Dashboard ซ้าย[cite: 1]
+        async function fetchSchedules() {
+            try {
+                const { data: schedules, error } = await supabase
+                    .from('schedules')
+                    .select('event_date, event_type, case_id')
+                    .eq('is_completed', false)
+                    .order('event_date', { ascending: true })
+                    .limit(5);
+
+                if (error) throw error;
+
+                const deadlineBody = document.getElementById('deadlineTableBody');
+                deadlineBody.innerHTML = '';
+
+                if (!schedules || schedules.length === 0) {
+                    deadlineBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400">🎉 สัปดาห์นี้ไม่มีนัดหมายเร่งด่วน</td></tr>`;
+                    return;
+                }
+
+                schedules.forEach(s => {
+                    const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+                    const formattedDate = new Date(s.event_date).toLocaleDateString('th-TH', dateOptions);
+                    
+                    deadlineBody.innerHTML += `
+                        <tr class="border-b border-slate-50">
+                            <td class="py-2.5 font-medium text-red-600">${formattedDate}</td>
+                            <td class="py-2.5 font-mono text-slate-700">${s.case_id}</td>
+                            <td class="py-2.5 text-slate-800 font-medium">${s.event_type}</td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error("โหลดปฏิทินนัดไม่สำเร็จ:", err.message);
+            }
+        }
+
+        // ฟังก์ชัน: กดปุ่มบันทึกเพื่อยิงข้อมูลคดีใหม่ตรงเข้า Supabase
+        async function saveCase(e) {
+            e.preventDefault();
+            
+            const black_number = document.getElementById('black_number').value;
+            const red_number = document.getElementById('red_number').value || null;
+            const court_name = document.getElementById('court_name').value;
+            const case_type = document.getElementById('case_type').value;
+            const claim_amount = parseFloat(document.getElementById('claim_amount').value) || 0;
+            const description = document.getElementById('description').value;
+
+            try {
+                const { error } = await supabase.from('cases').insert([
+                    { black_number, red_number, court_name, case_type, claim_amount, description, case_status: 'Draft' }
+                ]);
+
+                if (error) throw error;
+
+                alert("🎉 บันทึกข้อมูลคดีความสำเร็จ!");
+                toggleModal(false);
+                fetchCases(); // รีโหลดตารางใหม่ทันทีเพื่ออัปเดตค่าล่าสุด
+
+            } catch (err) {
+                alert("❌ เกิดข้อผิดพลาดในการบันทึก: " + err.message);
+            }
+        }
+    </script>
 </body>
 </html>
-"""
-
-# Write HTML content to a file
-input_html_path = "case_system_architecture.html"
-output_pdf_path = "case_system_architecture.pdf"
-
-with open(input_html_path, "w", encoding="utf-8") as f:
-    f.write(html_content)
-
-# Convert to PDF using WeasyPrint
-from weasyprint import HTML
-HTML(filename=input_html_path).write_pdf(output_pdf_path)
-
-print(f"PDF successfully generated at {output_pdf_path}")
