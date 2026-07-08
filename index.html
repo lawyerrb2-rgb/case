@@ -500,7 +500,7 @@
                                     class="text-xs bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 px-2 py-1.5 rounded-lg font-medium transition-colors">
                                     🔎 เปิดดู
                                 </button>
-                                <button onclick="openEditModal('${c.case_id}', '${c.black_number}', '${c.red_number || ''}', '${c.court_name}', '${c.case_type}', ${c.claim_amount || 0}, \`${c.description || ''}\`)" 
+                                <button onclick="openEditModal('${c.case_id}', '${c.black_number}', '${c.red_number || ''}', '${c.court_name}', '${c.case_type}', ${c.claim_amount || 0}, \`${c.description || ''}\`, \`${c.plaintiff_name || ''}\`, \`${c.defendant_name || ''}\`, '${c.client_role || 'โจทก์'}')" 
                                     class="text-xs bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 px-2 py-1.5 rounded-lg font-medium transition-colors">
                                     📝 แก้ไข
                                 </button>
@@ -827,11 +827,14 @@
             const case_type = document.getElementById('edit_case_type').value;
             const claim_amount = parseFloat(document.getElementById('edit_claim_amount').value) || 0;
             const description = document.getElementById('edit_description').value;
+            const plaintiff_name = document.getElementById('edit_plaintiff_name').value;
+            const defendant_name = document.getElementById('edit_defendant_name').value;
+            const client_role = document.getElementById('edit_client_role').value;
 
             try {
                 const { error } = await supabaseClient
                     .from('cases')
-                    .update({ black_number, red_number, court_name, case_type, claim_amount, description })
+                    .update({ black_number, red_number, court_name, case_type, claim_amount, description, plaintiff_name, defendant_name, client_role})
                     .eq('case_id', case_id);
 
                 if (error) throw error;
