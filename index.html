@@ -75,6 +75,12 @@
                 <button onclick="toggleModal(true)" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
                     ➕ บันทึกข้อมูลคดีใหม่
                 </button>
+                <button onclick="toggleScheduleModal(true)" class="w-full mt-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
+                    🗓️ ลงบันทึกวันนัดหมายเพิ่ม
+                </button>
+                <button onclick="toggleStatusModal(true)" class="w-full mt-2 bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
+                    🔄 อัปเดตสถานะคดีความ
+                </button>
             </div>
         </div>
 
@@ -111,6 +117,79 @@
                 </table>
             </div>
         </div>
+    <div id="scheduleModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl max-h-[90vh] overflow-y-auto transform transition-all">
+            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h3 class="text-lg font-bold text-slate-900">🗓️ เพิ่มวันนัดหมายครั้งต่อไปสำหรับคดีเดิม</h3>
+                <button onclick="toggleScheduleModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-2">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">🔍 เครื่องมือช่วยค้นหาคดีความ</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button onclick="filterCasesForSchedule('today')" class="text-xs bg-white border border-slate-300 hover:bg-slate-100 font-medium py-1.5 px-3 rounded text-slate-700">📅 แสดงเฉพาะคดีที่มีนัดวันนี้</button>
+                        <input type="text" id="filterByScheduleType" oninput="filterCasesForSchedule('type')" placeholder="กรองด้วยประเภทนัด (เช่น สืบพยาน)" class="w-full bg-white border border-slate-300 text-xs rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500" />
+                    </div>
+                    <button onclick="loadAllCasesToDropdown()" class="text-xs text-blue-600 underline block mt-1">แสดงคดีทั้งหมดใหม่</button>
+                </div>
+
+                <form id="scheduleForm" onsubmit="saveAdditionalSchedule(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">เลือกคดีความ *</label>
+                        <select id="schedule_case_id" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
+                            </select>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">วันและเวลานัดใหม่ *</label>
+                            <input type="datetime-local" id="add_event_date" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ประเภทนัดหมายใหม่ *</label>
+                            <input type="text" id="add_event_type" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น สืบพยานจำเลย / นัดแก้อุทธรณ์" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">บันทึกเพิ่มเติม (ประเด็นสำคัญที่ต้องเตรียม)</label>
+                        <textarea id="add_event_notes" rows="2" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น นำส่งเอกสารหมาย ล.1 ให้เรียบร้อยก่อนวันนัด..."></textarea>
+                    </div>
+                    <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                        <button type="button" onclick="toggleScheduleModal(false)" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">บันทึกวันนัดเพิ่ม</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md transform transition-all">
+            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h3 class="text-lg font-bold text-slate-900">🔄 ปรับอัปเดตสถานะคดีความ</h3>
+                <button onclick="toggleStatusModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
+            </div>
+            <form id="statusForm" onsubmit="updateCaseStatus(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">เลือกคดีที่ต้องการเปลี่ยนสถานะ *</label>
+                    <select id="status_case_id" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
+                        </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สถานะคดีใหม่ *</label>
+                    <select id="new_case_status" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
+                        <option value="Draft">Draft (ร่างคำร้อง/คำฟ้อง)</option>
+                        <option value="In_Progress">In Progress (กำลังพิจารณาคดี/สืบพยาน)</option>
+                        <option value="Appealing">Appealing (อยู่ระหว่างชั้นอุทธรณ์/ฎีกา)</option>
+                        <option value="Closed">Closed (ปิดสำนวนคดีถาวร)</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="toggleStatusModal(false)" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+                    <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">อัปเดตสถานะ</button>
+                </div>
+            </form>
+        </div>
+    </div>
     </main>
 
     <!-- 4. Modal: บันทึกข้อมูลคดีความใหม่ -->
@@ -153,8 +232,23 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สรุปข้อหา/พฤติการณ์คดี</label>
-                    <textarea id="description" rows="3" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="ระบุประเด็นสำคัญประจำคดีโดยย่อ..."></textarea>
+                    <textarea id="description" rows="2" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="ระบุประเด็นสำคัญประจำคดีโดยย่อ..."></textarea>
                 </div>
+                
+                <div class="border-t border-dashed border-slate-200 pt-3">
+                    <h4 class="text-xs font-bold text-blue-600 mb-2">🗓️ ลงบันทึกวันนัดหมายศาลนัดแรก</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">วันและเวลานัดหมาย *</label>
+                            <input type="datetime-local" id="event_date" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ประเภทนัดหมาย *</label>
+                            <input type="text" id="event_type" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น นัดชี้สองสถาน / สืบพยานโจทก์" />
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
                     <button type="button" onclick="toggleModal(false)" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">บันทึกข้อมูล</button>
@@ -301,9 +395,11 @@
         }
 
         // ฟังก์ชัน: กดปุ่มบันทึกเพื่อยิงข้อมูลคดีใหม่ตรงเข้า Supabase
+        // ฟังก์ชัน: กดปุ่มบันทึกเพื่อยิงข้อมูลคดีใหม่ และ บันทึกวันนัดลงตารางปฏิทินพร้อมกัน
         async function saveCase(e) {
             e.preventDefault();
             
+            // ดึงค่าข้อมูลคดี
             const black_number = document.getElementById('black_number').value;
             const red_number = document.getElementById('red_number').value || null;
             const court_name = document.getElementById('court_name').value;
@@ -311,19 +407,196 @@
             const claim_amount = parseFloat(document.getElementById('claim_amount').value) || 0;
             const description = document.getElementById('description').value;
 
+            // ดึงค่าข้อมูลวันนัดหมายที่เพิ่มเข้ามาใหม่
+            const event_date = document.getElementById('event_date').value;
+            const event_type = document.getElementById('event_type').value;
+
             try {
-                const { error } = await supabaseClient.from('cases').insert([
-                    { black_number, red_number, court_name, case_type, claim_amount, description, case_status: 'Draft' }
+                // ขั้นตอนที่ 1: บันทึกข้อมูลเข้าตารางคดี (cases) และสั่งให้ส่งข้อมูลคดีที่พึ่งบันทึกสำเร็จกลับมาตัวแปร เพื่อเอารหัสรหัสคดี (case_id)
+                const { data: newCase, error: caseError } = await supabaseClient
+                    .from('cases')
+                    .insert([{ black_number, red_number, court_name, case_type, claim_amount, description, case_status: 'Draft' }])
+                    .select(); // ดึงข้อมูลแถวที่เพิ่มลงฐานข้อมูลกลับมาทันที
+
+                if (caseError) throw caseError;
+
+                // เมื่อได้ข้อมูลคดีกลับมาแล้ว ดึงเอา รหัสรหัสคดี (เช่น CASE-2026xxxx-xxxx) ไปใส่ในตารางนัดหมาย
+                if (newCase && newCase.length > 0) {
+                    const assignedCaseId = newCase[0].case_id;
+
+                    // ขั้นตอนที่ 2: บันทึกวันนัดลงตารางปฏิทิน (schedules) โดยผูกรหัสคดีไว้
+                    const { error: scheduleError } = await supabaseClient
+                        .from('schedules')
+                        .insert([{ 
+                            case_id: assignedCaseId, 
+                            event_date: new Date(event_date).toISOString(), // แปลงเวลาให้เป็นมาตรฐานสากล
+                            event_type: event_type, 
+                            remind_days: 7 
+                        }]);
+
+                    if (scheduleError) throw scheduleError;
+                }
+
+                alert("🎉 บันทึกคดีความและลงปฏิทินวันนัดหมายสำเร็จ!");
+                toggleModal(false);
+                fetchCases();      // รีโหลดตารางรายการคดีความ
+                fetchSchedules();  // รีโหลดตารางปฏิทินแจ้งเตือนหน้าแรกด่วนทันที
+
+            } catch (err) {
+                alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err.message);
+            }
+        }
+    // ฟังก์ชัน: ควบคุมการเปิด-ปิดหน้าต่างลงนัดหมายเพิ่ม
+        function toggleScheduleModal(show) {
+            const modal = document.getElementById('scheduleModal');
+            if (show) {
+                modal.classList.remove('hidden');
+                loadAllCasesToDropdown(); // โหลดรายชื่อคดีเข้ากล่องเลือกทันทีที่เปิดหน้าต่าง
+            } else {
+                modal.classList.add('hidden');
+                document.getElementById('scheduleForm').reset();
+            }
+        }
+
+        // ฟังก์ชัน: ควบคุมการเปิด-ปิดหน้าต่างปรับสถานะคดี
+        function toggleStatusModal(show) {
+            const modal = document.getElementById('statusModal');
+            if (show) {
+                modal.classList.remove('hidden');
+                loadCasesToStatusDropdown(); // โหลดคดีเข้ากล่องปรับสถานะ
+            } else {
+                modal.classList.add('hidden');
+                document.getElementById('statusForm').reset();
+            }
+        }
+
+        // โหดลคดีความทั้งหมดเข้าสู่ตัวเลือก Dropdown (เริ่มต้น)
+        async function loadAllCasesToDropdown(customCases = null) {
+            const dropdown = document.getElementById('schedule_case_id');
+            dropdown.innerHTML = '<option value="">-- โปรดเลือกคดีความ --</option>';
+            
+            let cases = customCases;
+            if (!cases) {
+                const { data, error } = await supabaseClient.from('cases').select('case_id, black_number, court_name');
+                if (error) return;
+                cases = data;
+            }
+
+            cases.forEach(c => {
+                dropdown.innerHTML += `<option value="${c.case_id}">${c.case_id} | ${c.black_number} (${c.court_name})</option>`;
+            });
+        }
+
+        // โหลดคดีเข้าสู่ Dropdown สำหรับช่องปรับสถานะ
+        async function loadCasesToStatusDropdown() {
+            const dropdown = document.getElementById('status_case_id');
+            dropdown.innerHTML = '<option value="">-- โปรดเลือกคดีความ --</option>';
+            const { data, error } = await supabaseClient.from('cases').select('case_id, black_number, case_status');
+            if (error) return;
+
+            data.forEach(c => {
+                dropdown.innerHTML += `<option value="${c.case_id}">${c.case_id} | ${c.black_number} [สถานะปัจจุบัน: ${c.case_status}]</option>`;
+            });
+        }
+
+        // 🧠 ระบบกรองคดีความอัจฉริยะ (คดีที่มีนัดวันนี้ หรือ กรองตามประเภทนัด)
+        async function filterCasesForSchedule(filterMode) {
+            try {
+                let caseIds = [];
+
+                if (filterMode === 'today') {
+                    // 1. ดึงวันนัดที่มีผลตรงกับวันนี้
+                    const todayStr = new Date().toISOString().split('T')[0]; // ดึงเฉพาะปี-เดือน-วัน
+                    const { data: todaySchedules } = await supabaseClient
+                        .from('schedules')
+                        .select('case_id')
+                        .gte('event_date', `${todayStr}T00:00:00Z`)
+                        .lte('event_date', `${todayStr}T23:59:59Z`);
+                    
+                    if (todaySchedules) caseIds = todaySchedules.map(s => s.case_id);
+
+                } else if (filterMode === 'type') {
+                    // 2. ดึงคดีโดยกรองจากคำสำคัญของประเภทนัดหมาย
+                    const typeKeyword = document.getElementById('filterByScheduleType').value;
+                    if (typeKeyword.trim() === "") return;
+
+                    const { data: typeSchedules } = await supabaseClient
+                        .from('schedules')
+                        .select('case_id')
+                        .ilike('event_type', `%${typeKeyword}%`);
+                    
+                    if (typeSchedules) caseIds = typeSchedules.map(s => s.case_id);
+                }
+
+                // สกัดรหัสคดีไม่ให้ซ้ำกัน (Unique IDs)
+                const uniqueCaseIds = [...new Set(caseIds)];
+
+                if (uniqueCaseIds.length === 0) {
+                    document.getElementById('schedule_case_id').innerHTML = '<option value="">❌ ไม่พบคดีความที่ตรงกับเงื่อนไขนัดหมาย</option>';
+                    return;
+                }
+
+                // นำไอดีที่กรองได้ ไปดึงรายละเอียดชื่อศาลและเลขคดีดำมาแสดงใน Dropdown
+                const { data: filteredCases } = await supabaseClient
+                    .from('cases')
+                    .select('case_id, black_number, court_name')
+                    .in('case_id', uniqueCaseIds);
+
+                loadAllCasesToDropdown(filteredCases);
+
+            } catch (err) {
+                console.error("ระบบกรองนัดผิดพลาด:", err.message);
+            }
+        }
+
+        // ฟังก์ชัน: บันทึกวันนัดหมายครั้งต่อไป (ลงตาราง schedules เพิ่มเติม)
+        async function saveAdditionalSchedule(e) {
+            e.preventDefault();
+            const case_id = document.getElementById('schedule_case_id').value;
+            const event_date = document.getElementById('add_event_date').value;
+            const event_type = document.getElementById('add_event_type').value;
+            const notes = document.getElementById('add_event_notes').value;
+
+            if(!case_id) { alert("โปรดเลือกคดีความก่อนทำการบันทึก"); return; }
+
+            try {
+                const { error } = await supabaseClient.from('schedules').insert([
+                    { case_id, event_date: new Date(event_date).toISOString(), event_type, notes, is_completed: false }
                 ]);
 
                 if (error) throw error;
 
-                alert("🎉 บันทึกข้อมูลคดีความสำเร็จ!");
-                toggleModal(false);
-                fetchCases(); // รีโหลดตารางใหม่ทันทีเพื่ออัปเดตค่าล่าสุด
+                alert("🎉 บันทึกวันนัดหมายครั้งต่อไปเรียบร้อยแล้ว!");
+                toggleScheduleModal(false);
+                fetchSchedules(); // รีเฟรชแดชบอร์ดแสดงผลวันนัดด่วนด้านบนทันที
 
             } catch (err) {
-                alert("❌ เกิดข้อผิดพลาดในการบันทึก: " + err.message);
+                alert("❌ เกิดข้อผิดพลาดในการลงนัดเพิ่ม: " + err.message);
+            }
+        }
+
+        // ฟังก์ชัน: ปรับปรุงเปลี่ยนสถานะคดีหลักยิงตรงเข้าตาราง cases
+        async function updateCaseStatus(e) {
+            e.preventDefault();
+            const case_id = document.getElementById('status_case_id').value;
+            const new_status = document.getElementById('new_case_status').value;
+
+            if(!case_id) { alert("โปรดเลือกคดีที่ต้องการอัปเดตสถานะ"); return; }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('cases')
+                    .update({ case_status: new_status })
+                    .eq('case_id', case_id);
+
+                if (error) throw error;
+
+                alert("🔄 อัปเดตสถานะคดีความสำเร็จ!");
+                toggleStatusModal(false);
+                fetchCases(); // รีโหลดตารางรายการคดีความและแดชบอร์ดสถิติใหม่ทันที
+
+            } catch (err) {
+                alert("❌ เกิดข้อผิดพลาดในการปรับสถานะ: " + err.message);
             }
         }
     </script>
