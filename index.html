@@ -170,7 +170,7 @@
         const SUPABASE_ANON_KEY = "sb_publishable_d9hN5dKSkMJ9Hz240uuw7A_CT5PBSmM"; 
         
         // เริ่มต้นสร้างตัวแปร Client เชื่อมต่อฐานข้อมูล
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // เปิด-ปิด หน้าต่างกรอกข้อมูลคดีใหม่
         function toggleModal(show) {
@@ -194,7 +194,7 @@
                 const searchVal = document.getElementById('globalSearch').value;
                 const statusFilter = document.getElementById('filterStatus').value;
 
-                let query = supabase.from('cases').select('*').order('created_at', { ascending: false });
+                let query = supabaseClient.from('cases').select('*').order('created_at', { ascending: false });
 
                 // ถ้ามีการเลือกคัดกรองสถานะ
                 if (statusFilter !== 'ALL') {
@@ -312,7 +312,7 @@
             const description = document.getElementById('description').value;
 
             try {
-                const { error } = await supabase.from('cases').insert([
+                const { error } = await supabaseClient.from('cases').insert([
                     { black_number, red_number, court_name, case_type, claim_amount, description, case_status: 'Draft' }
                 ]);
 
