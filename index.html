@@ -909,7 +909,7 @@
                 // ขั้นตอนที่ 2: ค้นหานัดหมายแรกสุดที่ผูกกับคดีนี้ในตารางปฏิทิน (schedules) เพื่ออัปเดตตาม
                 const { data: firstSchedule, error: findError } = await supabaseClient
                     .from('schedules')
-                    .select('id')
+                    .select('event_id')
                     .eq('case_id', case_id)
                     .order('created_at', { ascending: true })
                     .limit(1);
@@ -924,7 +924,7 @@
                             event_date: formattedISOData, // ส่งค่า ISO ที่จัดการเรื่องบราวเซอร์เอ๋อแล้วเข้าไป
                             event_type: event_type
                         })
-                        .eq('id', firstSchedule[0].id);
+                        .eq('event_id', firstSchedule[0].event_id);
 
                     if (scheduleUpdateError) throw scheduleUpdateError;
                 } else {
