@@ -1410,7 +1410,7 @@
         // ⚡ 2. ฟังก์ชันเมื่อกดปุ่ม "เพิ่มคู่ความในคดีนี้" จากหน้าต่างรายละเอียดคดี
         function openContactModalFromCase() {
             // ดึงค่า case_id ของคดีหลักที่กำลังเปิดดูอยู่ (คุณทนายเช็กชื่อ id ตัวเก็บรหัสคดีในหน้าต่างนั้นด้วยนะครับ ตัวอย่างมักใช้ edit_case_id หรือ current_case_id)
-            const currentCaseId = document.getElementById('edit_case_id').value; 
+            const currentCaseId = document.getElementById('case_id').value; 
             
             if (!currentCaseId) {
                 alert("ไม่พบรหัสคดีความ ไม่สามารถเพิ่มรายชื่อได้");
