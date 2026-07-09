@@ -50,9 +50,10 @@
                     <table class="w-full text-left text-sm">
                         <thead>
                             <tr class="text-slate-500 border-b border-slate-100">
-                                <th class="pb-2 font-medium">วันนัดหมาย</th>
-                                <th class="pb-2 font-medium">รหัสคดี</th>
-                                <th class="pb-2 font-medium">ประเภทนัดหมาย</th>
+                                <th class="pb-2">วัน-เวลานัด</th>
+                                <th class="pb-2">เลขคดี</th>
+                                <th class="pb-2">ศาล</th>
+                                <th class="pb-2">ประเภทนัด</th>
                             </tr>
                         </thead>
                         <tbody id="deadlineTableBody" class="text-slate-600 divide-y divide-slate-50">
@@ -527,12 +528,22 @@
             }
         }
 
-        // ฟังก์ชัน: ดึงกำหนดวันนัดหมายมาโชว์ในกล่อง Dashboard ซ้าย[cite: 1]
+        // ฟังก์ชัน: ดึงกำหนดวันนัดหมายมาโชว์ในกล่อง Dashboard (แสดง วัน-เวลา, เลขคดีดำแดง, ชื่อศาล, ประเภทนัด)
         async function fetchSchedules() {
             try {
+                // 🔍 เชื่อมตารางดึงข้อมูลคดี (cases) พ่วงมาด้วยเพื่อเอาเลขคดีและชื่อศาล
                 const { data: schedules, error } = await supabaseClient
                     .from('schedules')
-                    .select('event_date, event_type, case_id')
+                    .select(`
+                        event_date, 
+                        event_type, 
+                        case_id,
+                        cases (
+                            black_number,
+                            red_number,
+                            court_name
+                        )
+                    `)
                     .eq('is_completed', false)
                     .order('event_date', { ascending: true })
                     .limit(5);
@@ -542,25 +553,45 @@
                 const deadlineBody = document.getElementById('deadlineTableBody');
                 deadlineBody.innerHTML = '';
 
+                // ปรับตัวเลข colspan เป็น 4 ตามจำนวนคอลัมน์ใหม่นะครับคุณทนาย
                 if (!schedules || schedules.length === 0) {
-                    deadlineBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400">🎉 สัปดาห์นี้ไม่มีนัดหมายเร่งด่วน</td></tr>`;
+                    deadlineBody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-400">🎉 สัปดาห์นี้ไม่มีนัดหมายเร่งด่วน</td></tr>`;
                     return;
                 }
 
                 schedules.forEach(s => {
-                    const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-                    const formattedDate = new Date(s.event_date).toLocaleDateString('th-TH', dateOptions);
+                    // 1. จัดฟอร์แมต วันที่ และ เวลา เป็นภาษาไทย (ปี พ.ศ.)
+                    const d = new Date(s.event_date);
+                    const formattedDate = d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' });
+                    const formattedTime = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
                     
+                    // 2. ดึงค่าจากตารางคดีที่เชื่อมโยงมา (ป้องกันกรณีข้อมูลคดีต้นทางถูกลบ)
+                    const caseInfo = s.cases || {};
+                    const blackNum = caseInfo.black_number ? `ดำ: ${caseInfo.black_number}` : '—';
+                    const redNum = caseInfo.red_number ? ` <span class="text-red-500">แดง: ${caseInfo.red_number}</span>` : '';
+                    const courtName = caseInfo.court_name || '—';
+
                     deadlineBody.innerHTML += `
-                        <tr class="border-b border-slate-50">
-                            <td class="py-2.5 font-medium text-red-600">${formattedDate}</td>
-                            <td class="py-2.5 font-mono text-slate-700">${s.case_id}</td>
-                            <td class="py-2.5 text-slate-800 font-medium">${s.event_type}</td>
+                        <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors text-xs sm:text-sm">
+                            <td class="py-3 font-mono text-slate-700">
+                                <div>${formattedDate}</div>
+                                <div class="text-xs text-blue-600 font-semibold">${formattedTime}</div>
+                            </td>
+                            <td class="py-3 font-medium text-slate-900">
+                                <div>${blackNum}</div>
+                                <div class="text-xs font-normal">${redNum}</div>
+                            </td>
+                            <td class="py-3 text-slate-600 font-medium max-w-[150px] truncate" title="${courtName}">${courtName}</td>
+                            <td class="py-3 text-slate-800 font-semibold">${s.event_type}</td>
                         </tr>
                     `;
                 });
             } catch (err) {
                 console.error("โหลดปฏิทินนัดไม่สำเร็จ:", err.message);
+                const deadlineBody = document.getElementById('deadlineTableBody');
+                if (deadlineBody) {
+                    deadlineBody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-red-500">❌ เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+                }
             }
         }
 
