@@ -449,10 +449,16 @@
             try {
                 // 1. ค้นหาคำค้นหาด่วน (ถ้ามี)
                 const searchVal = document.getElementById('globalSearch').value.trim();
+                const statusFilter = document.getElementById('filterStatus').value; // ➕ ดึงค่าจาก select ตัวเจ้าปัญหา
                 let query = supabaseClient.from('cases').select('*').order('created_at', { ascending: false });
 
                 if (searchVal !== "") {
                     query = query.or(`black_number.ilike.%${searchVal}%,court_name.ilike.%${searchVal}%,description.ilike.%${searchVal}%`);
+                }
+                //  Filter ตัวแสบอยู่ตรงนี้ครับคุณทนาย ⬇️
+                // 🔍 เงื่อนไขที่ 2: ถ้าสถานะที่เลือกไม่ใช่ "ALL" ให้สั่งกรองคอลัมน์ case_status บน Supabase ทันที
+                if (statusFilter !== "ALL") {
+                    query = query.eq('case_status', statusFilter);
                 }
 
                 const { data: cases, error: caseError } = await query;
