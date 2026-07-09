@@ -388,11 +388,11 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">ฐานะในคดี (Role) *</label>
                     <select id="cRole" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                        <option value="โจทก์">โจทก์</option>
-                        <option value="จำเลย">จำเลย</option>
-                        <option value="ผู้ร้อง">ผู้ร้อง</option>
-                        <option value="ผู้คัดค้าน">ผู้คัดค้าน</option>
-                        <option value="พยาน">พยาน</option>
+                        <option value="Plaintiff">โจทก์</option>
+                        <option value="Defendant">จำเลย</option>
+                        <option value="Petitioner">ผู้ร้อง</option>
+                        <option value="Objector">ผู้คัดค้าน</option>
+                        <option value="Witness">พยาน</option>
                     </select>
                 </div>
                 <div>
@@ -1233,6 +1233,15 @@
                     const caseInfo = c.cases || {};
                     const blackNum = caseInfo.black_number ? `คดีดำ: ${caseInfo.black_number}` : 'ทั่วไป (ไม่ผูกคดี)';
 
+                    // 🔄 จุดสำคัญ: แปลงค่าอังกฤษจากฐานข้อมูล กลับมาเป็นป้ายภาษาไทยสวย ๆ บนหน้าจอ
+                    let typeBadge = '';
+                    if (c.role === 'Plaintiff') typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 rounded-full">โจทก์</span>';
+                    else if (c.role === 'Defendant') typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold bg-red-50 text-red-700 rounded-full">จำเลย</span>';
+                    else if (c.role === 'Petitioner') typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold bg-purple-50 text-purple-700 rounded-full">ผู้ร้อง</span>';
+                    else if (c.role === 'Objector') typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700 rounded-full">ผู้คัดค้าน</span>';
+                    else if (c.role === 'Witness') typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded-full">พยาน</span>';
+                    else typeBadge = `<span class="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-full">${c.role || 'คู่ความ'}</span>`;
+
                     tbody.innerHTML += `
                         <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
                             <td class="px-6 py-3.5 font-semibold text-slate-900">
@@ -1240,7 +1249,7 @@
                                 <div class="text-xs text-slate-400 font-normal">เลขบัตร: ${c.citizen_id || '—'}</div>
                             </td>
                             <td class="px-6 py-3.5">
-                                <span class="px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded-full">${c.role || 'คู่ความ'}</span>
+                                ${typeBadge}
                             </td>
                             <td class="px-6 py-3.5 font-medium text-slate-600">${blackNum}</td>
                             <td class="px-6 py-3.5 text-slate-700 text-xs max-w-xs truncate" title="${c.contact_info || ''}">${c.contact_info || '—'}</td>
@@ -1255,7 +1264,6 @@
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">❌ เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
             }
         }
-
         // 💾 2. บันทึกข้อมูลเข้าตาราง contacts (อิงตามชื่อคอลัมน์จริง)
         async function saveContact(event) {
             event.preventDefault();
@@ -1294,7 +1302,7 @@
             document.getElementById('contact_id').value = c.contact_id;
             document.getElementById('contact_case_id').value = c.case_id || '';
             document.getElementById('cFullName').value = c.full_name;
-            document.getElementById('cRole').value = c.role || 'โจทก์';
+            document.getElementById('cRole').value = c.role || 'Plaintiff'; // แก้จากเดิมที่เป็น 'โจทก์'
             document.getElementById('cCitizenId').value = c.citizen_id || '';
             document.getElementById('cContactInfo').value = c.contact_info || '';
             
