@@ -438,6 +438,7 @@
         document.addEventListener("DOMContentLoaded", () => {
             fetchCases();
             fetchSchedules();
+            fetchMetrics(); // ➕ สั่งรันคำนวณสถิติเปิดหน้าแรก
         });
 
         // ฟังก์ชันหลัก: ดึงข้อมูลคดีทั้งหมด (รองรับ Filter และ Search บาร์ด่วนด้วย)[cite: 1]
@@ -531,6 +532,91 @@
 
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-500">❌ โหลดข้อมูลล้มเหลว: ${err.message}</td></tr>`;
+            }
+        }
+
+        // ฟังก์ชัน: คำนวณจำนวนคดีตามสถานะต่างๆ มาโชว์บน Dashboard
+        async function fetchMetrics() {
+            const container = document.getElementById('metricsContainer');
+            if (!container) return;
+
+            try {
+                // ดึงข้อมูลคอลัมน์ case_status ทั้งหมดจากตาราง cases มาประมวลผล
+                const { data: cases, error } = await supabaseClient
+                    .from('cases')
+                    .select('case_status');
+
+                if (error) throw error;
+
+                // 1. ตั้งต้นตัวนับสถิติเป็น 0
+                let countDraft = 0;
+                let countInProgress = 0;
+                let countAppealing = 0;
+                let countClosed = 0;
+
+                // 2. ลูปนับจำแนกประเภทตามความจริงในฐานข้อมูล
+                if (cases && cases.length > 0) {
+                    cases.forEach(c => {
+                        if (c.case_status === 'Draft') countDraft++;
+                        else if (c.case_status === 'In_Progress') countInProgress++;
+                        else if (c.case_status === 'Appealing') countAppealing++;
+                        else if (c.case_status === 'Closed') countClosed++;
+                    });
+                }
+
+                const totalCases = countDraft + countInProgress + countAppealing + countClosed;
+
+                // 3. พ่นโครงสร้าง HTML แถบสถานะคดีพร้อมจำนวนที่ถูกต้องลงหน้าจอ
+                container.innerHTML = `
+                    <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                        <span class="text-xs font-semibold text-slate-600">📁 คดีความทั้งหมดในระบบ</span>
+                        <b class="text-slate-900 text-sm bg-white border border-slate-200 px-2.5 py-0.5 rounded-full">${totalCases} คดี</b>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-slate-500">📝 Draft (ร่างคำฟ้อง)</span>
+                            <span class="text-slate-700">${countDraft} คดี</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div class="bg-amber-400 h-full rounded-full" style="width: ${totalCases > 0 ? (countDraft / totalCases) * 100 : 0}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-slate-500">⚖️ In Progress (พิจารณาคดี)</span>
+                            <span class="text-slate-700">${countInProgress} คดี</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div class="bg-blue-500 h-full rounded-full" style="width: ${totalCases > 0 ? (countInProgress / totalCases) * 100 : 0}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-slate-500">🏛️ Appealing (ชั้นอุทธรณ์/ฎีกา)</span>
+                            <span class="text-slate-700">${countAppealing} คดี</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div class="bg-purple-500 h-full rounded-full" style="width: ${totalCases > 0 ? (countAppealing / totalCases) * 100 : 0}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-slate-500">✅ Closed (ปิดคดีแล้ว)</span>
+                            <span class="text-slate-700">${countClosed} คดี</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div class="bg-emerald-500 h-full rounded-full" style="width: ${totalCases > 0 ? (countClosed / totalCases) * 100 : 0}%"></div>
+                        </div>
+                    </div>
+                `;
+
+            } catch (err) {
+                console.error("คำนวณสถิติผิดพลาด:", err.message);
+                container.innerHTML = `<p class="text-center text-red-500 text-xs py-2">❌ ไม่สามารถคำนวณสถิติได้</p>`;
             }
         }
 
@@ -664,6 +750,7 @@
                 toggleModal(false);
                 fetchCases();      // รีโหลดตารางรายการคดีความ
                 fetchSchedules();  // รีโหลดตารางปฏิทินแจ้งเตือนหน้าแรกด่วนทันที
+                fetchMetrics(); // ➕ สั่งรันคำนวณสถิติเปิดหน้าแรก
 
             } catch (err) {
                 alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err.message);
@@ -982,6 +1069,7 @@
                 toggleEditModal(false);
                 fetchCases();      // รีโหลดตารางรายการคดีความทั้งหมดใหม่
                 fetchSchedules();  // รีโหลดตารางปฏิทินเตือนภัยด้านบนสุด
+                fetchMetrics(); // ➕ สั่งรันคำนวณสถิติเปิดหน้าแรก
 
             } catch (err) {
                 alert("❌ เกิดข้อผิดพลาดในการแก้ไขข้อมูล: " + err.message);
