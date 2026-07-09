@@ -1042,8 +1042,7 @@
             const modal = document.getElementById('viewDetailsModal');
             if (show) modal.classList.remove('hidden');
             else modal.classList.add('hidden');
-            // ใส่บรรทัดนี้เข้าไปในฟังก์ชันดึงรายละเอียดคดีเดิมของคุณทนาย (ตรงช่วงที่ได้ค่า case_id มาแล้ว)
-            fetchCaseParticipants(case_id);
+            
         }
 
         // ฟังก์ชันสั่งกางข้อมูลเพื่อแสดงรายละเอียดคู่ความเมื่อกดปุ่ม "เปิดดู"
@@ -1057,6 +1056,8 @@
             document.getElementById('view_client_role').innerText = role;
             document.getElementById('view_desc').innerText = desc;
             toggleViewModal(true);
+            // ใส่บรรทัดนี้เข้าไปในฟังก์ชันดึงรายละเอียดคดีเดิมของคุณทนาย (ตรงช่วงที่ได้ค่า case_id มาแล้ว)
+            fetchCaseParticipants(case_id);
         }
 
         // ฟังก์ชัน: เมื่อกดปุ่มแก้ไขในแถว ให้ดึงข้อมูลเก่านั้นมากางในช่องฟอร์มทันที
