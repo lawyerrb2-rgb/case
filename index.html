@@ -311,7 +311,7 @@
                     <div><span class="text-xs text-slate-400 block font-medium">หมายเลขคดีแดง</span><b class="text-red-500" id="view_red_num"></b></div>
                 </div>
                 
-                <!-- 👥 โซนจัดแสดงข้อมูลคู่ความที่ลงลึกรายละเอียด -->
+                <!-- 👥 โซนจัดแสดงข้อมูลคู่ความที่ลงลึกรายละเอียดสำหรับกดดูรายละเอียด -->
                 <div class="bg-blue-50/50 rounded-xl p-4 border border-blue-100 space-y-3">
                     <span class="text-xs font-bold text-blue-700 tracking-wider uppercase block">👥 ข้อมูลคู่ความในคดี</span>
                     <div class="grid grid-cols-1 gap-2 text-sm text-slate-700">
@@ -328,6 +328,35 @@
                     <p class="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 leading-relaxed whitespace-pre-line" id="view_desc"></p>
                 </div>
             </div>
+            <!-- 👥 บล็อกแสดงข้อมูลคู่ความประจำคดี (เพิ่มเข้าไปใน Case Details Modal เดิม ก่อนปุ่มปิดหน้าต่าง) -->
+<div class="mt-6 pt-5 border-t border-slate-200">
+    <div class="flex items-center justify-between mb-3">
+        <h4 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+            👥 รายชื่อคู่ความและพยานประจำคดี
+        </h4>
+        <!-- ปุ่มกดเพิ่มรายชื่อโดยล็อกคดีนี้ทันที -->
+        <button type="button" onclick="openContactModalFromCase()" class="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">
+            ➕ เพิ่มคู่ความในคดีนี้
+        </button>
+    </div>
+    
+    <!-- ตารางรายชื่อคู่ความเฉพาะของคดีนี้ -->
+    <div class="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
+        <table class="w-full text-xs text-left text-slate-600">
+            <thead class="bg-slate-100 text-slate-700 font-semibold uppercase">
+                <tr>
+                    <th class="px-4 py-2">ชื่อ-นามสกุล</th>
+                    <th class="px-4 py-2">ฐานะ</th>
+                    <th class="px-4 py-2">ข้อมูลติดต่อ / เลขบัตร</th>
+                </tr>
+            </thead>
+            <tbody id="caseParticipantsTableBody">
+                <!-- รายชื่อคู่ความในคดีนี้จะถูกพ่นด้วย JavaScript -->
+                <tr><td colspan="3" class="text-center py-3 text-slate-400">ยังไม่มีรายชื่อคู่ความผูกกับคดีนี้</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
             <div class="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-end">
                 <button onclick="toggleViewModal(false)" class="bg-slate-900 text-white text-xs font-medium py-2 px-4 rounded-lg hover:bg-slate-800 transition-colors">ปิดหน้าต่าง</button>
             </div>
@@ -1013,6 +1042,8 @@
             const modal = document.getElementById('viewDetailsModal');
             if (show) modal.classList.remove('hidden');
             else modal.classList.add('hidden');
+            // ใส่บรรทัดนี้เข้าไปในฟังก์ชันดึงรายละเอียดคดีเดิมของคุณทนาย (ตรงช่วงที่ได้ค่า case_id มาแล้ว)
+            fetchCaseParticipants(case_id);
         }
 
         // ฟังก์ชันสั่งกางข้อมูลเพื่อแสดงรายละเอียดคู่ความเมื่อกดปุ่ม "เปิดดู"
@@ -1295,6 +1326,10 @@
             } catch (err) {
                 alert("❌ ไม่สามารถบันทึกข้อมูลได้: " + err.message);
             }
+            // ใส่พ่วงไว้ท้ายคำสั่งบันทึกข้อมูลรายชื่อสำเร็จ
+            const currentCaseId = document.getElementById('contact_case_id').value;
+            if (currentCaseId) fetchCaseParticipants(currentCaseId); // อัปเดตตารางเล็กในหน้าต่างคดี
+            fetchContacts(); // อัปเดตตารางสมุดรายชื่อหน้าใหญ่
         }
 
         // 📝 3. ฟังก์ชันกางข้อมูลเก่าลงฟอร์มเมื่อกดแก้ไข
@@ -1322,6 +1357,71 @@
                 document.getElementById('contact_case_id').value = '';
                 document.getElementById('contactModalTitle').innerText = 'เพิ่มผู้ติดต่อใหม่';
             }
+        }
+        // 🔍 1. ฟังก์ชันดึงรายชื่อคู่ความ เฉพาะคดีที่กำลังเปิดดูอยู่มาโชว์ใน Modal รายละเอียดคดี
+        async function fetchCaseParticipants(caseId) {
+            const tbody = document.getElementById('caseParticipantsTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-slate-400">⏳ กำลังโหลดรายชื่อคู่ความ...</td></tr>`;
+            
+            try {
+                const { data: participants, error } = await supabaseClient
+                    .from('contacts')
+                    .select('*')
+                    .eq('case_id', caseId)
+                    .order('created_at', { ascending: true });
+                    
+                if (error) throw error;
+                
+                if (!participants || participants.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-slate-400">👥 ยังไม่มีรายชื่อคู่ความผูกกับคดีนี้</td></tr>`;
+                    return;
+                }
+                
+                tbody.innerHTML = '';
+                participants.forEach(p => {
+                    let roleBadge = '';
+                    if (p.role === 'Plaintiff') roleBadge = '<span class="px-1.5 py-0.5 text-[11px] font-medium bg-emerald-50 text-emerald-700 rounded border border-emerald-200">โจทก์</span>';
+                    else if (p.role === 'Defendant') roleBadge = '<span class="px-1.5 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 rounded border border-red-200">จำเลย</span>';
+                    else if (p.role === 'Petitioner') roleBadge = '<span class="px-1.5 py-0.5 text-[11px] font-medium bg-purple-50 text-purple-700 rounded border border-purple-200">ผู้ร้อง</span>';
+                    else if (p.role === 'Objector') roleBadge = '<span class="px-1.5 py-0.5 text-[11px] font-medium bg-amber-50 text-amber-700 rounded border border-amber-200">ผู้คัดค้าน</span>';
+                    else if (p.role === 'Witness') roleBadge = '<span class="px-1.5 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-700 rounded border border-blue-200">พยาน</span>';
+                    else roleBadge = `<span class="px-1.5 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-600 rounded">${p.role || 'คู่ความ'}</span>`;
+                    
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-200 bg-white hover:bg-slate-50">
+                            <td class="px-4 py-2.5 font-semibold text-slate-800">${p.full_name}</td>
+                            <td class="px-4 py-2.5">${roleBadge}</td>
+                            <td class="px-4 py-2.5 text-slate-500">
+                                <div class="font-mono text-[11px]">${p.citizen_id ? 'บัตร: ' + p.citizen_id : ''}</div>
+                                <div class="text-slate-600">${p.contact_info || '—'}</div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error("โหลดรายชื่อคู่ความประจำคดีไม่สำเร็จ:", err);
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-red-500">❌ ดึงข้อมูลล้มเหลว</td></tr>`;
+            }
+        }
+
+        // ⚡ 2. ฟังก์ชันเมื่อกดปุ่ม "เพิ่มคู่ความในคดีนี้" จากหน้าต่างรายละเอียดคดี
+        function openContactModalFromCase() {
+            // ดึงค่า case_id ของคดีหลักที่กำลังเปิดดูอยู่ (คุณทนายเช็กชื่อ id ตัวเก็บรหัสคดีในหน้าต่างนั้นด้วยนะครับ ตัวอย่างมักใช้ edit_case_id หรือ current_case_id)
+            const currentCaseId = document.getElementById('edit_case_id').value; 
+            
+            if (!currentCaseId) {
+                alert("ไม่พบรหัสคดีความ ไม่สามารถเพิ่มรายชื่อได้");
+                return;
+            }
+            
+            // เปิดหน้าต่างกรอกรายชื่อผู้ติดต่อ (Contact Modal) 
+            toggleContactModal(true);
+            
+            // 🔒 ทำการหยอดล็อกรหัสคดีนี้ฝังลงไปในฟอร์มทันที!
+            document.getElementById('contact_case_id').value = currentCaseId;
+            document.getElementById('contactModalTitle').innerText = '👥 เพิ่มคู่ความประจำคดีนี้';
         }
     </script>
 </body>
