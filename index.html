@@ -82,6 +82,15 @@
                 <button onclick="toggleStatusModal(true)" class="w-full mt-2 bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
                     🔄 อัปเดตสถานะคดีความ
                 </button>
+                <!-- แถบเมนูด้านข้าง (Sidebar) -->
+<nav class="space-y-1">
+    <a href="#" onclick="switchPage('cases')" id="menuCases" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-700">
+        ⚖️ คดีความทั้งหมด
+    </a>
+    <a href="#" onclick="switchPage('contacts')" id="menuContacts" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+        📞 สมุดรายชื่อผู้ติดต่อ
+    </a>
+</nav>
             </div>
         </div>
 
@@ -324,6 +333,86 @@
             </div>
         </div>
     </div>
+    <!-- ต่อล่างสุดจากตึก HTML เดิมที่เป็นส่วนจัดการคดี (วางก่อนปิดแท็ก </main> หรือโซนที่เป็น Content) ==================== หน้าสมุดรายชื่อ (CONTACTS PAGE) ==================== -->
+<div id="contactsPage" class="hidden animate-fadeIn">
+    <!-- ส่วนหัวหน้าตาและปุ่มเพิ่มข้อมูล -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-5 border-b border-slate-200 mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">📞 สมุดรายชื่อผู้ติดต่อ</h1>
+            <p class="text-sm text-slate-500 mt-1">จัดการข้อมูลลูกความ พยาน และบุคคลที่เกี่ยวข้องกับคดีความ</p>
+        </div>
+        <button onclick="toggleContactModal(true)" class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition-colors">
+            ➕ เพิ่มผู้ติดต่อใหม่
+        </button>
+    </div>
+
+    <!-- บล็อกตารางรายชื่อ -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-slate-500">
+                <thead class="text-xs font-semibold text-slate-600 uppercase tracking-wider bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-6 py-3.5">ชื่อ-นามสกุล / เลขบัตร</th>
+                        <th class="px-6 py-3.5">ฐานะในคดี</th>
+                        <th class="px-6 py-3.5">ผูกกับคดี</th>
+                        <th class="px-6 py-3.5">ข้อมูลการติดต่อ</th>
+                        <th class="px-6 py-3.5 text-center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="contactTableBody">
+                    <!-- ข้อมูลจะถูกพ่นมาตรงนี้ด้วย JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== POP-UP MODAL เพิ่ม/แก้ไข ผู้ติดต่อ ==================== -->
+<div id="contactModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-scaleIn">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <h3 class="text-lg font-bold text-slate-800" id="contactModalTitle">เพิ่มผู้ติดต่อใหม่</h3>
+            <button onclick="toggleContactModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-medium">✕</button>
+        </div>
+        <form id="contactForm" onsubmit="saveContact(event)" class="p-6 space-y-4">
+            <input type="hidden" id="contact_id">
+            
+            <input type="hidden" id="contact_case_id">
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อ-นามสกุลคู่ความ *</label>
+                <input type="text" id="cFullName" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ฐานะในคดี (Role) *</label>
+                    <select id="cRole" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                        <option value="โจทก์">โจทก์</option>
+                        <option value="จำเลย">จำเลย</option>
+                        <option value="ผู้ร้อง">ผู้ร้อง</option>
+                        <option value="ผู้คัดค้าน">ผู้คัดค้าน</option>
+                        <option value="พยาน">พยาน</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">เลขประจำตัวประชาชน (Citizen ID)</label>
+                    <input type="text" id="cCitizenId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="X-XXXX-XXXXX-XX-X">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">ข้อมูลการติดต่อ (เบอร์โทร/ที่อยู่/ไลน์)</label>
+                <textarea id="cContactInfo" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="ระบุเบอร์โทรศัพท์ หรือที่อยู่ติดต่อ..."></textarea>
+            </div>
+
+            <div class="pt-2 flex justify-end gap-3 border-t border-slate-100">
+                <button type="button" onclick="toggleContactModal(false)" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">ยกเลิก</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow">บันทึกรายชื่อ</button>
+            </div>
+        </form>
+    </div>
+</div>
     </main>
 
     <!-- 4. Modal: บันทึกข้อมูลคดีความใหม่ -->
@@ -1074,6 +1163,156 @@
             } catch (err) {
                 alert("❌ เกิดข้อผิดพลาดในการแก้ไขข้อมูล: " + err.message);
                 console.error("Update Error Logs:", err);
+            }
+        }
+        // 🔄 1. ฟังก์ชันสลับหน้าจอระหว่าง หน้าคดีความ กับ หน้าสมุดรายชื่อ
+        function switchPage(page) {
+            const casesPage = document.getElementById('dashboardPage') || document.getElementById('casesPage'); // เช็กชื่อ Id หน้าแรกของคุณทนาย
+            const contactsPage = document.getElementById('contactsPage');
+            const menuCases = document.getElementById('menuCases');
+            const menuContacts = document.getElementById('menuContacts');
+
+            if (page === 'contacts') {
+                if(casesPage) casesPage.classList.add('hidden');
+                contactsPage.classList.remove('hidden');
+                // สลับสีปุ่มเมนูสไตล์ Tailwind
+                menuContacts.className = "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-700";
+                menuCases.className = "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900";
+                fetchContacts(); // โหลดข้อมูลเมื่อเปิดหน้านี้
+            } else {
+                contactsPage.classList.add('hidden');
+                if(casesPage) casesPage.classList.remove('hidden');
+                menuCases.className = "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-700";
+                menuContacts.className = "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900";
+            }
+        }
+
+        // 👁️ 2. ควบคุมการเปิด/ปิดหน้าต่าง Pop-up ของรายชื่อ
+        function toggleContactModal(show) {
+            const modal = document.getElementById('contactModal');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+                document.getElementById('contactForm').reset();
+                document.getElementById('contactId').value = '';
+                document.getElementById('contactModalTitle').innerText = 'เพิ่มผู้ติดต่อใหม่';
+            }
+        }
+
+       
+        // 📥 1. ดึงรายชื่อผู้ติดต่อ โดยเชื่อมเอาเลขคดีมาโชว์ด้วยเพื่อให้รู้ว่าเป็นคู่ความของคดีไหน
+        async function fetchContacts() {
+            const tbody = document.getElementById('contactTableBody');
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-400">⏳ กำลังดึงรายชื่อคู่ความ...</td></tr>`;
+
+            try {
+                // ดึงข้อมูลเชื่อมตาราง cases เพื่อเอาเลขคดีดำมาแสดงคู่กัน
+                const { data: contacts, error } = await supabaseClient
+                    .from('contacts')
+                    .select(`
+                        contact_id,
+                        case_id,
+                        full_name,
+                        role,
+                        citizen_id,
+                        contact_info,
+                        cases (black_number)
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (!contacts || contacts.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">📭 ยังไม่มีข้อมูลรายชื่อคู่ความในระบบ</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                contacts.forEach(c => {
+                    const caseInfo = c.cases || {};
+                    const blackNum = caseInfo.black_number ? `คดีดำ: ${caseInfo.black_number}` : 'ทั่วไป (ไม่ผูกคดี)';
+
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
+                            <td class="px-6 py-3.5 font-semibold text-slate-900">
+                                <div>${c.full_name}</div>
+                                <div class="text-xs text-slate-400 font-normal">เลขบัตร: ${c.citizen_id || '—'}</div>
+                            </td>
+                            <td class="px-6 py-3.5">
+                                <span class="px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded-full">${c.role || 'คู่ความ'}</span>
+                            </td>
+                            <td class="px-6 py-3.5 font-medium text-slate-600">${blackNum}</td>
+                            <td class="px-6 py-3.5 text-slate-700 text-xs max-w-xs truncate" title="${c.contact_info || ''}">${c.contact_info || '—'}</td>
+                            <td class="px-6 py-3.5 text-center">
+                                <button onclick="editContact(${JSON.stringify(c).replace(/"/g, '&quot;')})" class="text-blue-600 hover:text-blue-800 font-medium">แก้ไข</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error("โหลดรายชื่อไม่สำเร็จ:", err.message);
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">❌ เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+            }
+        }
+
+        // 💾 2. บันทึกข้อมูลเข้าตาราง contacts (อิงตามชื่อคอลัมน์จริง)
+        async function saveContact(event) {
+            event.preventDefault();
+            
+            const contact_id = document.getElementById('contact_id').value;
+            const contactData = {
+                case_id: document.getElementById('contact_case_id').value || null, // ผูกรหัสคดี (ถ้ามี)
+                full_name: document.getElementById('cFullName').value.trim(),
+                role: document.getElementById('cRole').value,
+                citizen_id: document.getElementById('cCitizenId').value.trim() || null,
+                contact_info: document.getElementById('cContactInfo').value.trim() || null
+            };
+
+            try {
+                let error;
+                if (contact_id) {
+                    // แก้ไขข้อมูลเดิมโดยอิงตาม Primary Key ชื่อ contact_id
+                    ({ error } = await supabaseClient.from('contacts').update(contactData).eq('contact_id', contact_id));
+                } else {
+                    // เพิ่มรายชื่อคู่ความใหม่
+                    ({ error } = await supabaseClient.from('contacts').insert([contactData]));
+                }
+
+                if (error) throw error;
+
+                alert("🎉 บันทึกข้อมูลคู่ความเรียบร้อย!");
+                toggleContactModal(false);
+                fetchContacts(); // รีโหลดตารางรายชื่อ
+            } catch (err) {
+                alert("❌ ไม่สามารถบันทึกข้อมูลได้: " + err.message);
+            }
+        }
+
+        // 📝 3. ฟังก์ชันกางข้อมูลเก่าลงฟอร์มเมื่อกดแก้ไข
+        function editContact(c) {
+            document.getElementById('contact_id').value = c.contact_id;
+            document.getElementById('contact_case_id').value = c.case_id || '';
+            document.getElementById('cFullName').value = c.full_name;
+            document.getElementById('cRole').value = c.role || 'โจทก์';
+            document.getElementById('cCitizenId').value = c.citizen_id || '';
+            document.getElementById('cContactInfo').value = c.contact_info || '';
+            
+            document.getElementById('contactModalTitle').innerText = '📝 แก้ไขข้อมูลคู่ความ';
+            document.getElementById('contactModal').classList.remove('hidden');
+        }
+
+        // 👁️ 4. ควบคุมการปิดหน้าต่างป๊อปอัปรายชื่อ
+        function toggleContactModal(show) {
+            const modal = document.getElementById('contactModal');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+                document.getElementById('contactForm').reset();
+                document.getElementById('contact_id').value = '';
+                document.getElementById('contact_case_id').value = '';
+                document.getElementById('contactModalTitle').innerText = 'เพิ่มผู้ติดต่อใหม่';
             }
         }
     </script>
