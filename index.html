@@ -1060,6 +1060,7 @@
             document.getElementById('view_desc').innerText = desc;
             
             toggleViewModal(true);
+            fetchCaseParticipants(case_id);
             // 2. ➕ ล็อกรหัสคดีปัจจุบันฝากไว้ในตัวแปรส่วนกลางที่เราเพิ่งสร้างไว้ด้านบน
             currentViewingCaseId = case_id;
             
