@@ -336,7 +336,7 @@
         </h4>
         <!-- ปุ่มกดเพิ่มรายชื่อ-->
         <!-- ปรับโค้ดปุ่มกดเพิ่มคู่ความใน HTML ให้รองรับการส่งค่าตรง -->
-        <button type="button" id="btnAddNewContact" class="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">
+        <button type="button" onclick="openContactModalFromCase()" class="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">
         ➕ เพิ่มคู่ความในคดีนี้
         </button>
     </div>
@@ -542,6 +542,8 @@
         
         // เริ่มต้นสร้างตัวแปร Client เชื่อมต่อฐานข้อมูล
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // ➕ ประกาศตัวแปรส่วนกลางสำหรับจำว่าตอนนี้กำลังเปิดดูคดีรหัสอะไรอยู่
+        let currentViewingCaseId = null;
 
         // เปิด-ปิด หน้าต่างกรอกข้อมูลคดีใหม่
         function toggleModal(show) {
@@ -1056,11 +1058,10 @@
             document.getElementById('view_defendant').innerText = defendant;
             document.getElementById('view_client_role').innerText = role;
             document.getElementById('view_desc').innerText = desc;
-            // ➕ ฝังรหัสคดีลงไปในปุ่มกดโดยตรงตอนเปิดหน้าต่าง
-            document.getElementById('btnAddNewContact').setAttribute('onclick', `openContactModalFromCase('${case_id}')`);
+            
             toggleViewModal(true);
-            // ใส่บรรทัดนี้เข้าไปในฟังก์ชันดึงรายละเอียดคดีเดิมของคุณทนาย (ตรงช่วงที่ได้ค่า case_id มาแล้ว)
-            fetchCaseParticipants(case_id);
+            // 2. ➕ ล็อกรหัสคดีปัจจุบันฝากไว้ในตัวแปรส่วนกลางที่เราเพิ่งสร้างไว้ด้านบน
+            currentViewingCaseId = case_id;
             
         }
 
@@ -1412,23 +1413,19 @@
         }
 
         // ⚡ 2. ฟังก์ชันเมื่อกดปุ่ม "เพิ่มคู่ความในคดีนี้" จากหน้าต่างรายละเอียดคดี
-        // ⚡ ปรับฟังก์ชันให้รับรหัสคดีผ่านตัวแปรได้เลย
-        function openContactModalFromCase(forcedCaseId) {
-            let currentCaseId = forcedCaseId;
-            
-            // ถ้าไม่มีการส่งค่ามาตรงๆ ค่อยไปดึงจาก input (เผื่อเหนียว)
-            if (!currentCaseId) {
-                const inputElement = document.getElementById('edit_case_id') || document.getElementById('case_id');
-                currentCaseId = inputElement ? inputElement.value : '';
-            }
-            
-            if (!currentCaseId) {
-                alert("⚠️ ไม่พบรหัสคดีความ ไม่สามารถเพิ่มรายชื่อได้");
+        // ⚡ ฟังก์ชันเปิดฟอร์มเพิ่มคู่ความ โดยดึงรหัสคดีจากตัวแปรส่วนกลาง
+        function openContactModalFromCase() {
+            // วิ่งไปหยิบค่าคดีที่ฝากไว้ในตัวแปรส่วนกลาง
+            if (!currentViewingCaseId) {
+                alert("⚠️ ไม่พบรหัสคดีความในระบบ โปรดลองปิดหน้าต่างรายละเอียดคดีแล้วเปิดใหม่อีกครั้ง");
                 return;
             }
             
+            // เปิดหน้าต่างกรอกข้อมูลรายชื่อผู้ติดต่อ
             toggleContactModal(true);
-            document.getElementById('contact_case_id').value = currentCaseId;
+            
+            // 🔒 หยอดล็อกรหัสคดีฝังลงไปในฟอร์มบันทึกรายชื่อ
+            document.getElementById('contact_case_id').value = currentViewingCaseId;
             document.getElementById('contactModalTitle').innerText = '👥 เพิ่มคู่ความประจำคดีนี้';
         }
     </script>
