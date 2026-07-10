@@ -312,6 +312,7 @@
                 </div>
                 
                 <!-- 👥 โซนจัดแสดงข้อมูลคู่ความที่ลงลึกรายละเอียดสำหรับกดดูรายละเอียด -->
+                 <input type="hidden" id="view_case_id_hidden">
                 <div class="bg-blue-50/50 rounded-xl p-4 border border-blue-100 space-y-3">
                     <span class="text-xs font-bold text-blue-700 tracking-wider uppercase block">👥 ข้อมูลคู่ความในคดี</span>
                     <div class="grid grid-cols-1 gap-2 text-sm text-slate-700">
@@ -1049,6 +1050,7 @@
         }
 
         // ฟังก์ชันสั่งกางข้อมูลเพื่อแสดงรายละเอียดคู่ความเมื่อกดปุ่ม "เปิดดู"
+        // ฟังก์ชันสั่งกางข้อมูลเพื่อแสดงรายละเอียดคู่ความเมื่อกดปุ่ม "เปิดดู"
         function openViewModal(id, black, red, court, plaintiff, defendant, role, desc) {
             document.getElementById('view_title_id').innerText = "📊 รายละเอียดเชิงลึกคดี: " + id;
             document.getElementById('view_title_court').innerText = "🏛️ สังกัดศาล: " + court;
@@ -1060,10 +1062,13 @@
             document.getElementById('view_desc').innerText = desc;
             
             toggleViewModal(true);
-            fetchCaseParticipants(case_id);
-            // 2. ➕ ล็อกรหัสคดีปัจจุบันฝากไว้ในตัวแปรส่วนกลางที่เราเพิ่งสร้างไว้ด้านบน
-            currentViewingCaseId = case_id;
             
+            // 🛠️ แก้ไขจุดนี้: เปลี่ยนจาก case_id เป็น id ตามชื่อตัวแปรที่รับเข้ามาในวงเล็บด้านบนครับ
+            fetchCaseParticipants(id);
+            
+            // ล็อกรหัสคดีปัจจุบันฝากไว้ในตัวแปรส่วนกลางเพื่อส่งต่อไปยังหน้าคอนแทค
+            currentViewingCaseId = id;
+            document.getElementById('view_case_id_hidden').value = id;
         }
 
         // ฟังก์ชัน: เมื่อกดปุ่มแก้ไขในแถว ให้ดึงข้อมูลเก่านั้นมากางในช่องฟอร์มทันที
@@ -1416,19 +1421,18 @@
         // ⚡ 2. ฟังก์ชันเมื่อกดปุ่ม "เพิ่มคู่ความในคดีนี้" จากหน้าต่างรายละเอียดคดี
         // ⚡ ฟังก์ชันเปิดฟอร์มเพิ่มคู่ความ โดยดึงรหัสคดีจากตัวแปรส่วนกลาง
         function openContactModalFromCase() {
-            // วิ่งไปหยิบค่าคดีที่ฝากไว้ในตัวแปรส่วนกลาง
-            if (!currentViewingCaseId) {
-                alert("⚠️ ไม่พบรหัสคดีความในระบบ โปรดลองปิดหน้าต่างรายละเอียดคดีแล้วเปิดใหม่อีกครั้ง");
-                return;
-            }
-            
-            // เปิดหน้าต่างกรอกข้อมูลรายชื่อผู้ติดต่อ
-            toggleContactModal(true);
-            
-            // 🔒 หยอดล็อกรหัสคดีฝังลงไปในฟอร์มบันทึกรายชื่อ
-            document.getElementById('contact_case_id').value = currentViewingCaseId;
-            document.getElementById('contactModalTitle').innerText = '👥 เพิ่มคู่ความประจำคดีนี้';
-        }
+    // วิ่งไปหยิบจากกล่องข้อความลับบนหน้าจอ
+    const currentCaseId = document.getElementById('view_case_id_hidden')?.value || currentViewingCaseId;
+
+    if (!currentCaseId) {
+        alert("⚠️ ไม่พบรหัสคดีความในระบบ โปรดลองปิดหน้าต่างรายละเอียดคดีแล้วเปิดใหม่อีกครั้ง");
+        return;
+    }
+
+    toggleContactModal(true);
+    document.getElementById('contact_case_id').value = currentCaseId;
+    document.getElementById('contactModalTitle').innerText = '👥 เพิ่มคู่ความประจำคดีนี้';
+}
     </script>
 </body>
 </html>
