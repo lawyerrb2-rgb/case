@@ -133,6 +133,21 @@
                     <!-- ข้อมูลจะถูกโหลดเข้ามาแสดงผลด้วย JavaScript -->
                 </tbody>
             </table>
+            <div class="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
+            <div class="text-xs text-slate-500 font-medium">
+                แสดงคดีที่ <span id="pageStart" class="font-semibold text-slate-700">1</span> ถึง 
+                <span id="pageEnd" class="font-semibold text-slate-700">10</span> จากทั้งหมด 
+                <span id="totalCasesCount" class="font-semibold text-slate-700">0</span> คดี
+            </div>
+            <div class="inline-flex gap-2">
+                <button onclick="changePage(-1)" id="btnPrevPage" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                ⬅️ หน้าก่อนหน้า
+                </button>
+        <button onclick="changePage(1)" id="btnNextPage" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                หน้าถัดไป ➡️
+        </button>
+    </div>
+</div>
         </div>
     </div>
         </div>
@@ -537,6 +552,9 @@
 
     <!-- 📜 5. JavaScript ส่วนควบคุมการทำงานหลังบ้านร่วมกับ Supabase -->
     <script>
+        // ➕ ตัวแปรสำหรับคุมระบบเปลี่ยนหน้าคดีความ
+        let currentPage = 1;
+        const itemsPerPage = 10;
         // 🔒 นำข้อมูล API คีย์ของตารางคดีใน Supabase มาใส่ตรงนี้
         const SUPABASE_URL = "https://vktpxtjocwssdneccukz.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_d9hN5dKSkMJ9Hz240uuw7A_CT5PBSmM"; 
@@ -565,27 +583,48 @@
 
         // ฟังก์ชันหลัก: ดึงข้อมูลคดีทั้งหมด (รองรับ Filter และ Search บาร์ด่วนด้วย)[cite: 1]
         // ฟังก์ชัน: ดึงข้อมูลคดีทั้งหมดมาแสดงในตาราง พร้อมเชื่อมโยงข้อมูลวันนัดล่าสุด
+        // 📥 ฟังก์ชันดึงข้อมูลคดีความ (เวอร์ชันผสมระบบค้นหา + กรองสถานะ + จำกัด 10 คดีต่อหน้า)
         async function fetchCases() {
             const tbody = document.getElementById('caseTableBody');
+            if (!tbody) return;
             tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-slate-400">⏳ กำลังโหลดข้อมูลคดีความ...</td></tr>`;
+
+            // 📑 คำนวณจุดเริ่มต้นและจุดสิ้นสุดของแถวข้อมูลที่จะดึงประจำหน้านั้นๆ (หน้าละ 10 คดี)
+            const from = (currentPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
 
             try {
                 // 1. ค้นหาคำค้นหาด่วน (ถ้ามี)
                 const searchVal = document.getElementById('globalSearch').value.trim();
-                const statusFilter = document.getElementById('filterStatus').value; // ➕ ดึงค่าจาก select ตัวเจ้าปัญหา
-                let query = supabaseClient.from('cases').select('*').order('created_at', { ascending: false });
+                const statusFilter = document.getElementById('filterStatus').value;
+                
+                // 🛠️ ปรับแต่ง Query โดยขอผลนับจำนวนคดีทั้งหมดในระบบพ่วงมาด้วย (count: 'exact')
+                let query = supabaseClient
+                    .from('cases')
+                    .select('*', { count: 'exact' })
+                    .order('created_at', { ascending: false });
 
                 if (searchVal !== "") {
                     query = query.or(`black_number.ilike.%${searchVal}%,court_name.ilike.%${searchVal}%,description.ilike.%${searchVal}%`);
                 }
-                //  Filter ตัวแสบอยู่ตรงนี้ครับคุณทนาย ⬇️
-                // 🔍 เงื่อนไขที่ 2: ถ้าสถานะที่เลือกไม่ใช่ "ALL" ให้สั่งกรองคอลัมน์ case_status บน Supabase ทันที
+                
                 if (statusFilter !== "ALL") {
                     query = query.eq('case_status', statusFilter);
                 }
 
-                const { data: cases, error: caseError } = await query;
+                // 📑 สั่งดึงข้อมูลเฉพาะช่วงแถวที่เราต้องการโชว์ในหน้านี้เท่านั้น
+                const { data: cases, error: caseError, count } = await query.range(from, to);
                 if (caseError) throw caseError;
+
+                // 🔢 อัปเดตตัวเลขจำนวนคดีความบนแถบควบคุมหน้า (Pagination) ด้านล่าง
+                const totalCount = count || 0;
+                document.getElementById('totalCasesCount').innerText = totalCount;
+                document.getElementById('pageStart').innerText = totalCount === 0 ? 0 : from + 1;
+                document.getElementById('pageEnd').innerText = Math.min(to + 1, totalCount);
+
+                // 🔘 ควบคุมการเปิด/ปิดการกดของปุ่มเปลี่ยนหน้า (ป้องกันการกดเลยหน้าที่มีอยู่จริง)
+                document.getElementById('btnPrevPage').disabled = (currentPage === 1);
+                document.getElementById('btnNextPage').disabled = (to + 1 >= totalCount);
 
                 if (!cases || cases.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">❌ ไม่พบข้อมูลคดีความในระบบ</td></tr>`;
@@ -596,7 +635,7 @@
                 const { data: allSchedules } = await supabaseClient
                     .from('schedules')
                     .select('case_id, event_date, event_type')
-                    .order('event_date', { ascending: false }); // เรียงจากอนาคตลงมาเพื่อให้ได้นัดล่าสุดก่อน
+                    .order('event_date', { ascending: false });
 
                 tbody.innerHTML = "";
 
@@ -607,7 +646,6 @@
                     let latestNextDate = "—";
 
                     if (caseSchedules.length > 0) {
-                        // นำนัดหมายที่ใกล้มาแสดงผล
                         latestNextDetail = caseSchedules[0].event_type;
                         const d = new Date(caseSchedules[0].event_date);
                         latestNextDate = d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' }) + ' ' + d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
@@ -632,11 +670,8 @@
                             </td>
                             <td class="px-6 py-4 max-w-xs truncate text-slate-500" title="${c.description || ''}">${c.description || '—'}</td>
                             <td class="px-6 py-4 font-mono font-medium">${c.claim_amount ? c.claim_amount.toLocaleString('th-TH', { minimumFractionDigits: 2 }) : '0.00'}</td>
-                            
-                            <!-- 📅 แสดงข้อมูลประเภทนัดและวันนัดที่ผูกมาให้ตามความต้องการครับคุณทนาย -->
                             <td class="px-6 py-4 text-xs font-medium text-slate-700 max-w-[150px] truncate">${latestNextDetail}</td>
                             <td class="px-6 py-4 text-xs font-mono text-slate-600">${latestNextDate}</td>
-                            
                             <td class="px-6 py-4">${statusBadge}</td>
                             <td class="px-6 py-4 text-center">
                                 <button onclick="openViewModal('${c.case_id}', '${c.black_number}', '${c.red_number || '—'}', '${c.court_name}', \`${c.plaintiff_name || 'ไม่ระบุ'}\`, \`${c.defendant_name || 'ไม่ระบุ'}\`, '${c.client_role || 'ไม่ระบุ'}', \`${c.description || 'ไม่มีรายละเอียดเพิ่มเติม'}\`)" 
@@ -655,6 +690,11 @@
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-500">❌ โหลดข้อมูลล้มเหลว: ${err.message}</td></tr>`;
             }
+        }
+        // 🔄 ฟังก์ชันเมื่อกดปุ่ม "หน้าก่อนหน้า" (-1) หรือ "หน้าถัดไป" (1)
+        function changePage(direction) {
+            currentPage += direction;
+            fetchCases(); // รีโหลดข้อมูลคดีใหม่ประจำหน้านั้นๆ
         }
 
         // ฟังก์ชัน: คำนวณจำนวนคดีตามสถานะต่างๆ มาโชว์บน Dashboard
