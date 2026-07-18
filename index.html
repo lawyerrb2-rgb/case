@@ -800,6 +800,8 @@
         // ฟังก์ชัน: ดึงกำหนดวันนัดหมายมาโชว์ในกล่อง Dashboard (แสดง วัน-เวลา, เลขคดีดำแดง, ชื่อศาล, ประเภทนัด)
         async function fetchSchedules() {
             try {
+                // ดึงวันที่และเวลา ณ ปัจจุบันในรูปแบบที่ฐานข้อมูลเข้าใจ (ISO String)
+                const todayIso = new Date().toISOString();
                 // 🔍 เชื่อมตารางดึงข้อมูลคดี (cases) พ่วงมาด้วยเพื่อเอาเลขคดีและชื่อศาล
                 const { data: schedules, error } = await supabaseClient
                     .from('schedules')
@@ -813,6 +815,7 @@
                             court_name
                         )
                     `)
+                    .gte('event_date', todayIso) // 👈 ➕ กรองเอาเฉพาะที่ "วันนัด >= วันนี้" เท่านั้น นัดที่ผ่านไปแล้วจะไม่หลุดมา
                     .eq('is_completed', false)
                     .order('event_date', { ascending: true })
                     .limit(5);
