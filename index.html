@@ -197,35 +197,52 @@
         </div>
     </div>
 
-    <div id="statusModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md transform transition-all">
-            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                <h3 class="text-lg font-bold text-slate-900">🔄 ปรับอัปเดตสถานะคดีความ</h3>
-                <button onclick="toggleStatusModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
-            </div>
-            <form id="statusForm" onsubmit="updateCaseStatus(event)" class="p-6 space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">เลือกคดีที่ต้องการเปลี่ยนสถานะ *</label>
-                    <select id="status_case_id" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
-                        </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สถานะคดีใหม่ *</label>
-                    <select id="new_case_status" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
-                        <option value="Draft">Draft (ร่างคำร้อง/คำฟ้อง)</option>
-                        <option value="In_Progress">In Progress (กำลังพิจารณาคดี/สืบพยาน)</option>
-                        <option value="Appealing">Appealing (อยู่ระหว่างชั้นอุทธรณ์/ฎีกา)</option>
-                        <option value="Execution">Execution (บังคับคดี)</option>
-                        <option value="Closed">Closed (ปิดสำนวนคดีถาวร)</option>
-                    </select>
-                </div>
-                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
-                    <button type="button" onclick="toggleStatusModal(false)" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
-                    <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">อัปเดตสถานะ</button>
-                </div>
-            </form>
+    <!-- 🔄 หน้าต่างอัปเดตสถานะคดีความ (เวอร์ชันพิมพ์ค้นหาอัจฉริยะ) -->
+<div id="statusModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md transform transition-all">
+        <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+            <h3 class="text-lg font-bold text-slate-900">🔄 ปรับอัปเดตสถานะคดีความ</h3>
+            <button type="button" onclick="toggleStatusModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
         </div>
+        <form id="statusForm" onsubmit="updateCaseStatus(event)" class="p-6 space-y-4">
+            
+            <!-- ช่องค้นหาคดีความอัจฉริยะ -->
+            <div class="relative">
+                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">เลือกคดีที่ต้องการเปลี่ยนสถานะ *</label>
+                <div class="relative">
+                    <input type="text" id="status_case_search" placeholder="🔍 พิมพ์ คดีดำ หรือ ชื่อศาล เพื่อค้นหา..." autocomplete="off"
+                        class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" 
+                        oninput="filterStatusCaseDropdown()">
+                    
+                    <!-- Hidden Input สำหรับแอบล็อกค่า case_id จริงส่งเข้าฐานข้อมูล -->
+                    <input type="hidden" id="status_case_id" required>
+                </div>
+                
+                <!-- กล่องรายการคดีจะเด้งลอยลงมาด้านล่างเวลามีการค้นหา -->
+                <div id="statusCaseDropdownList" class="hidden absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 shadow-lg rounded-lg z-50 text-sm">
+                    <!-- รายชื่อคดีจะถูกพ่นใส่ตรงนี้ด้วย JavaScript -->
+                </div>
+            </div>
+
+            <!-- ช่องเลือกสถานะใหม่ -->
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สถานะคดีใหม่ *</label>
+                <select id="new_case_status" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
+                    <option value="Draft">Draft (ร่างคำร้อง/คำฟ้อง)</option>
+                    <option value="In_Progress">In Progress (กำลังพิจารณาคดี/สืบพยาน)</option>
+                    <option value="Appealing">Appealing (อยู่ระหว่างชั้นอุทธรณ์/ฎีกา)</option>
+                    <option value="Execution">Execution (บังคับคดี)</option>
+                    <option value="Closed">Closed (ปิดสำนวนคดีถาวร)</option>
+                </select>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                <button type="button" onclick="toggleStatusModal(false)" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">อัปเดตสถานะ</button>
+            </div>
+        </form>
     </div>
+</div>
     <!-- 📝 หน้าต่าง Pop-up: แก้ไขข้อมูลคดีความ -->
     <div id="editCaseModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl max-h-[90vh] overflow-y-auto transform transition-all">
@@ -565,6 +582,7 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         // ➕ ประกาศตัวแปรส่วนกลางสำหรับจำว่าตอนนี้กำลังเปิดดูคดีรหัสอะไรอยู่
         let currentViewingCaseId = null;
+        let allCasesForStatusUpdate = []; // เก็บอาเรย์คดีสำหรับใช้ทำระบบเสิร์ชหาใน Modal อัปเดตสถานะ
 
         // เปิด-ปิด หน้าต่างกรอกข้อมูลคดีใหม่
         function toggleModal(show) {
@@ -948,46 +966,117 @@
             }
         }
 
-        // ฟังก์ชัน: ควบคุมการเปิด-ปิดหน้าต่างปรับสถานะคดี
-        function toggleStatusModal(show) {
+        // เริ่มต้นส่วนฟังก์ชันการปรับสถานะคดี
+        // 🔄 ฟังก์ชันเปิด/ปิดหน้าต่างสถานะ และโหลดข้อมูลคดีมาตุนเตรียมพร้อมค้นหา
+        async function toggleStatusModal(show) {
             const modal = document.getElementById('statusModal');
+            const dropdownList = document.getElementById('statusCaseDropdownList');
+            
             if (show) {
                 modal.classList.remove('hidden');
-                loadCasesToStatusDropdown(); // โหลดคดีเข้ากล่องปรับสถานะ
+                // ล้างค่าเก่าที่อาจค้างอยู่ออกให้เกลี้ยงก่อนใช้งาน
+                document.getElementById('status_case_search').value = '';
+                document.getElementById('status_case_id').value = '';
+                dropdownList.innerHTML = '<div class="p-3 text-center text-slate-400 text-xs">⏳ กำลังเตรียมฐานข้อมูลคดีความ...</div>';
+                dropdownList.classList.remove('hidden');
+
+                try {
+                    // ดึงคดีความทั้งหมดมาเก็บไว้ในตัวแปรฝั่ง Client เพื่อเอาไว้เสิร์ชกรองได้ไวแบบเรียลไทม์
+                    const { data: cases, error } = await supabaseClient
+                        .from('cases')
+                        .select('case_id, black_number, court_name, case_status')
+                        .order('created_at', { ascending: false });
+                    
+                    if (!error && cases) {
+                        allCasesForStatusUpdate = cases;
+                        renderStatusCaseList(cases); // เรียกฟังก์ชันแสดงผลรายการคดี
+                    }
+                } catch(e) { 
+                    console.error("โหลดข้อมูลคดีเข้าตัวเลือกค้นหาล้มเหลว:", e); 
+                }
             } else {
                 modal.classList.add('hidden');
+                dropdownList.classList.add('hidden');
                 document.getElementById('statusForm').reset();
             }
         }
 
-        // โหดลคดีความทั้งหมดเข้าสู่ตัวเลือก Dropdown (เริ่มต้น)
-        async function loadAllCasesToDropdown(customCases = null) {
-            const dropdown = document.getElementById('schedule_case_id');
-            dropdown.innerHTML = '<option value="">-- โปรดเลือกคดีความ --</option>';
+        // 🧠 ฟังก์ชันย่อยสำหรับวาด/พ่นรายการคดีหล่นลงมาใต้กล่องค้นหา
+        function renderStatusCaseList(list) {
+            const dropdownList = document.getElementById('statusCaseDropdownList');
+            if (list.length === 0) {
+                dropdownList.innerHTML = '<div class="p-3 text-center text-red-400 text-xs">❌ ไม่พบคดีความที่ตรงกับคำค้นหา</div>';
+                return;
+            }
             
-            let cases = customCases;
-            if (!cases) {
-                const { data, error } = await supabaseClient.from('cases').select('case_id, black_number, court_name');
-                if (error) return;
-                cases = data;
+            dropdownList.innerHTML = '';
+            list.forEach(c => {
+                dropdownList.innerHTML += `
+                    <div onclick="selectCaseForStatusUpdate('${c.case_id}', '${c.black_number}', '${c.court_name}', '${c.case_status}')" 
+                         class="px-4 py-2.5 hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-slate-100 flex justify-between items-center text-slate-700 font-medium transition-colors">
+                        <div>
+                            <span class="text-blue-600 font-bold">ดำ: ${c.black_number}</span> 
+                            <span class="text-xs text-slate-400 ml-1.5 font-normal">(${c.court_name})</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 🔍 ฟังก์ชันกรองรายชื่อคดีแบบเรียลไทม์เวลาคุณทนายพิมพ์ข้อความ (คดีดำ/ศาล)
+        function filterStatusCaseDropdown() {
+            const searchVal = document.getElementById('status_case_search').value.toLowerCase().trim();
+            const dropdownList = document.getElementById('statusCaseDropdownList');
+            
+            dropdownList.classList.remove('hidden'); // แสดงกล่องลิสต์ตัวเลือกออกมา
+            
+            // กรองหาจากเลขคดีดำหรือชื่อศาลที่พิมพ์เข้ามา
+            const filtered = allCasesForStatusUpdate.filter(c => 
+                (c.black_number && c.black_number.toLowerCase().includes(searchVal)) || 
+                (c.court_name && c.court_name.toLowerCase().includes(searchVal))
+            );
+            renderStatusCaseList(filtered);
+        }
+
+        // 📌 ฟังก์ชันเมื่อทำการคลิกเลือกคดีใดคดีหนึ่งจากรายการค้นหา
+        function selectCaseForStatusUpdate(id, black, court, currentStatus) {
+            document.getElementById('status_case_id').value = id; // ล็อกไอดีจริงส่งลงช่อง Hidden สำหรับส่งให้ Supabase
+            document.getElementById('status_case_search').value = `คดีดำ: ${black} (${court})`; // หยอดข้อความบอกคุณทนายว่าเลือกคดีไหนอยู่
+            document.getElementById('new_case_status').value = currentStatus; // ขยับตัวเลือกสถานะใหม่ให้ตรงตามปัจจุบันของคดีนั้นทันทีกันคุณทนายสับสน
+            document.getElementById('statusCaseDropdownList').classList.add('hidden'); // ซ่อนหุบรายการหล่นตัวเลือกไป
+        }
+
+        // 🔄 ฟังก์ชันกดยิงส่งอัปเดตสถานะคดีหลักเข้าตารางคดี
+        async function updateCaseStatus(e) {
+            e.preventDefault();
+            const case_id = document.getElementById('status_case_id').value;
+            const new_status = document.getElementById('new_case_status').value;
+
+            if (!case_id) { 
+                alert("⚠️ โปรดพิมพ์ค้นหาและคลิกเลือกคดีที่ต้องการอัปเดตสถานะก่อนครับ"); 
+                return; 
             }
 
-            cases.forEach(c => {
-                dropdown.innerHTML += `<option value="${c.case_id}">${c.case_id} | ${c.black_number} (${c.court_name})</option>`;
-            });
-        }
+            try {
+                const { error } = await supabaseClient
+                    .from('cases')
+                    .update({ case_status: new_status })
+                    .eq('case_id', case_id);
 
-        // โหลดคดีเข้าสู่ Dropdown สำหรับช่องปรับสถานะ
-        async function loadCasesToStatusDropdown() {
-            const dropdown = document.getElementById('status_case_id');
-            dropdown.innerHTML = '<option value="">-- โปรดเลือกคดีความ --</option>';
-            const { data, error } = await supabaseClient.from('cases').select('case_id, black_number, case_status');
-            if (error) return;
+                if (error) throw error;
 
-            data.forEach(c => {
-                dropdown.innerHTML += `<option value="${c.case_id}">${c.case_id} | ${c.black_number} [สถานะปัจจุบัน: ${c.case_status}]</option>`;
-            });
+                alert("🔄 ปรับปรุงและอัปเดตสถานะคดีความสำเร็จเรียบร้อยครับ!");
+                toggleStatusModal(false);
+                
+                // สั่งรีโหลดตารางคดีใหญ่ และแดชบอร์ดสถิติให้ปรับตัวเลขตามทันที
+                if (typeof fetchCases === 'function') fetchCases(); 
+                if (typeof fetchMetrics === 'function') fetchMetrics();
+
+            } catch (err) {
+                alert("❌ เกิดข้อผิดพลาดในการปรับสถานะ: " + err.message);
+            }
         }
+        // สิ้นสุดโค้ดการอัปเดตสถานะคดี
 
         // 🧠 ระบบกรองคดีความอัจฉริยะ (คดีที่มีนัดวันนี้ หรือ กรองตามประเภทนัด)
         async function filterCasesForSchedule(filterMode) {
@@ -1065,30 +1154,7 @@
             }
         }
 
-        // ฟังก์ชัน: ปรับปรุงเปลี่ยนสถานะคดีหลักยิงตรงเข้าตาราง cases
-        async function updateCaseStatus(e) {
-            e.preventDefault();
-            const case_id = document.getElementById('status_case_id').value;
-            const new_status = document.getElementById('new_case_status').value;
-
-            if(!case_id) { alert("โปรดเลือกคดีที่ต้องการอัปเดตสถานะ"); return; }
-
-            try {
-                const { error } = await supabaseClient
-                    .from('cases')
-                    .update({ case_status: new_status })
-                    .eq('case_id', case_id);
-
-                if (error) throw error;
-
-                alert("🔄 อัปเดตสถานะคดีความสำเร็จ!");
-                toggleStatusModal(false);
-                fetchCases(); // รีโหลดตารางรายการคดีความและแดชบอร์ดสถิติใหม่ทันที
-
-            } catch (err) {
-                alert("❌ เกิดข้อผิดพลาดในการปรับสถานะ: " + err.message);
-            }
-        }
+        
     // ฟังก์ชัน: ควบคุมการเปิด-ปิด หน้าต่างแก้ไขคดี
         function toggleEditModal(show) {
             const modal = document.getElementById('editCaseModal');
