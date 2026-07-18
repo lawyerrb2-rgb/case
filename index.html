@@ -968,28 +968,28 @@
 
         // เริ่มต้นส่วนฟังก์ชันการปรับสถานะคดี
         // 🔄 ฟังก์ชันเปิด/ปิดหน้าต่างสถานะ และโหลดข้อมูลคดีมาตุนเตรียมพร้อมค้นหา
+        // 🔄 1. ฟังก์ชันเปิด/ปิดหน้าต่างสถานะ และโหลดข้อมูลคดีมาตุนเตรียมพร้อมค้นหา (เพิ่มการดึงคอลัมน์ชื่อคู่ความ/ข้อหา)
         async function toggleStatusModal(show) {
             const modal = document.getElementById('statusModal');
             const dropdownList = document.getElementById('statusCaseDropdownList');
             
             if (show) {
                 modal.classList.remove('hidden');
-                // ล้างค่าเก่าที่อาจค้างอยู่ออกให้เกลี้ยงก่อนใช้งาน
                 document.getElementById('status_case_search').value = '';
                 document.getElementById('status_case_id').value = '';
                 dropdownList.innerHTML = '<div class="p-3 text-center text-slate-400 text-xs">⏳ กำลังเตรียมฐานข้อมูลคดีความ...</div>';
                 dropdownList.classList.remove('hidden');
 
                 try {
-                    // ดึงคดีความทั้งหมดมาเก็บไว้ในตัวแปรฝั่ง Client เพื่อเอาไว้เสิร์ชกรองได้ไวแบบเรียลไทม์
+                    // ➕ ดึงคอลัมน์เพิ่ม: plaintiff_name, defendant_name, description
                     const { data: cases, error } = await supabaseClient
                         .from('cases')
-                        .select('case_id, black_number, court_name, case_status')
+                        .select('case_id, black_number, court_name, case_status, plaintiff_name, defendant_name, description')
                         .order('created_at', { ascending: false });
                     
                     if (!error && cases) {
                         allCasesForStatusUpdate = cases;
-                        renderStatusCaseList(cases); // เรียกฟังก์ชันแสดงผลรายการคดี
+                        renderStatusCaseList(cases);
                     }
                 } catch(e) { 
                     console.error("โหลดข้อมูลคดีเข้าตัวเลือกค้นหาล้มเหลว:", e); 
@@ -1001,7 +1001,7 @@
             }
         }
 
-        // 🧠 ฟังก์ชันย่อยสำหรับวาด/พ่นรายการคดีหล่นลงมาใต้กล่องค้นหา
+        // 🧠 2. ฟังก์ชันย่อยสำหรับวาด/พ่นรายการคดีหล่นลงมาใต้กล่องค้นหา (เพิ่มรายละเอียด โจทก์-จำเลย-ข้อหา ให้เห็นตอนผลลัพธ์ดรอปดาวน์)
         function renderStatusCaseList(list) {
             const dropdownList = document.getElementById('statusCaseDropdownList');
             if (list.length === 0) {
@@ -1011,30 +1011,58 @@
             
             dropdownList.innerHTML = '';
             list.forEach(c => {
+                // ตัวแปรเก็บข้อความสถานะภาษาไทยสำหรับโชว์ประกอบให้ดูง่าย
+                let statusTh = 'ร่างฟ้อง';
+                if(c.case_status === 'In_Progress') statusTh = 'อยู่ระหว่างพิจารณาคดี';
+                if(c.case_status === 'Appealing') statusTh = 'อุทธรณ์/ฎีกา';
+                if(c.case_status === 'Execution') statusTh = 'บังคับคดี';
+                if(c.case_status === 'Closed') statusTh = 'ปิดคดี';
+
                 dropdownList.innerHTML += `
                     <div onclick="selectCaseForStatusUpdate('${c.case_id}', '${c.black_number}', '${c.court_name}', '${c.case_status}')" 
-                         class="px-4 py-2.5 hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-slate-100 flex justify-between items-center text-slate-700 font-medium transition-colors">
-                        <div>
-                            <span class="text-blue-600 font-bold">ดำ: ${c.black_number}</span> 
-                            <span class="text-xs text-slate-400 ml-1.5 font-normal">(${c.court_name})</span>
+                         class="px-4 py-3 hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-slate-100 flex flex-col gap-0.5 text-slate-700 font-medium transition-colors">
+                        <div class="flex justify-between items-center w-full">
+                            <div>
+                                <span class="text-blue-600 font-bold">ดำ: ${c.black_number}</span> 
+                                <span class="text-xs text-slate-400 ml-1.5 font-normal">(${c.court_name})</span>
+                            </div>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-normal">${statusTh}</span>
                         </div>
+                        <!-- ➕ แสดงรายชื่อคู่ความย่อเพื่อให้ตัดสินใจเลือกได้ง่ายขึ้น -->
+                        <div class="text-[11px] text-slate-500 font-normal truncate">
+                            👤 โจทก์: ${c.plaintiff_name || 'ไม่ระบุ'} v จำเลย: ${c.defendant_name || 'ไม่ระบุ'}
+                        </div>
+                        ${c.description ? `<div class="text-[11px] text-slate-400 font-normal italic truncate">💼 ข้อหา: ${c.description}</div>` : ''}
                     </div>
                 `;
             });
         }
 
-        // 🔍 ฟังก์ชันกรองรายชื่อคดีแบบเรียลไทม์เวลาคุณทนายพิมพ์ข้อความ (คดีดำ/ศาล)
+        // 🔍 3. ฟังก์ชันกรองรายชื่อคดีแบบครอบจักรวาล (คดีดำ / ศาล / โจทก์ / จำเลย / ข้อหา / สถานะ)
         function filterStatusCaseDropdown() {
             const searchVal = document.getElementById('status_case_search').value.toLowerCase().trim();
             const dropdownList = document.getElementById('statusCaseDropdownList');
             
-            dropdownList.classList.remove('hidden'); // แสดงกล่องลิสต์ตัวเลือกออกมา
+            dropdownList.classList.remove('hidden');
             
-            // กรองหาจากเลขคดีดำหรือชื่อศาลที่พิมพ์เข้ามา
-            const filtered = allCasesForStatusUpdate.filter(c => 
-                (c.black_number && c.black_number.toLowerCase().includes(searchVal)) || 
-                (c.court_name && c.court_name.toLowerCase().includes(searchVal))
-            );
+            const filtered = allCasesForStatusUpdate.filter(c => {
+                // แปลงสถานะภาษาอังกฤษให้รองรับคำค้นหาภาษาไทย
+                let statusTh = '';
+                if(c.case_status === 'Draft') statusTh = 'ร่างฟ้อง ร่างคำฟ้อง ร่างคำร้อง draft';
+                else if(c.case_status === 'In_Progress') statusTh = 'อยู่ระหว่างพิจารณาคดี สืบพยาน พิจารณา progress';
+                else if(c.case_status === 'Appealing') statusTh = 'อุทธรณ์ ฎีกา appealing';
+                else if(c.case_status === 'Execution') statusTh = 'บังคับคดี execution';
+                else if(c.case_status === 'Closed') statusTh = 'ปิดคดี ปิดสำนวนถาวร closed';
+
+                // ตรวจเช็กคำค้นหาว่าตรงกับข้อมูลส่วนไหนในคดีบ้าง
+                return (c.black_number && c.black_number.toLowerCase().includes(searchVal)) || 
+                       (c.court_name && c.court_name.toLowerCase().includes(searchVal)) ||
+                       (c.plaintiff_name && c.plaintiff_name.toLowerCase().includes(searchVal)) ||
+                       (c.defendant_name && c.defendant_name.toLowerCase().includes(searchVal)) ||
+                       (c.description && c.description.toLowerCase().includes(searchVal)) ||
+                       (statusTh.includes(searchVal));
+            });
+            
             renderStatusCaseList(filtered);
         }
 
