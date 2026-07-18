@@ -607,7 +607,7 @@
                     .order('created_at', { ascending: false });
 
                 if (searchVal !== "") {
-                    query = query.or(`black_number.ilike.%${searchVal}%,court_name.ilike.%${searchVal}%,description.ilike.%${searchVal}%`);
+                    query = query.or(`black_number.ilike.%${searchVal}%,red_number.ilike.%${searchVal}%,court_name.ilike.%${searchVal}%,case_status.ilike.%${searchVal}%,description.ilike.%${searchVal}%`);
                 }
                 
                 if (statusFilter !== "ALL") {
