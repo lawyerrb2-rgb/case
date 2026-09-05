@@ -3,24 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JusticeFlow - ระบบบริหารจัดการคดีความสำหรับทนายความ</title>
-    <!-- นำเข้า Tailwind CSS สำหรับจัดการ UI -->
+    <title>M Justice Partners - ระบบบริหารจัดการคดีความ</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- นำเข้า Supabase SDK สำหรับเชื่อมต่อฐานข้อมูลโดยตรง -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- นำเข้า Font สวยๆ สำหรับใช้งาน -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Sarabun', sans-serif; }
-    </style>
+    <link rel="stylesheet" href="css/app.css">
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col">
 
-    <!-- 1. Sticky Header & Global Search[cite: 1] -->
+    <!-- ==================== HEADER ==================== -->
     <header class="sticky top-0 z-50 flex flex-col md:flex-row items-center justify-between bg-slate-950 px-6 py-4 text-white shadow-xl border-b border-slate-800">
         <div class="flex items-center space-x-3 mb-4 md:mb-0">
-            <img src="https://vktpxtjocwssdneccukz.supabase.co/storage/v1/object/public/logo/M%20Attorney%20Law%20Logo.png" 
-                 alt="M Attorney Law Logo" 
+            <img src="https://vktpxtjocwssdneccukz.supabase.co/storage/v1/object/public/logo/M%20Attorney%20Law%20Logo.png"
+                 alt="M Attorney Law Logo"
                  class="h-12 w-auto object-contain rounded-lg shadow-md" />
             <div>
                 <h1 class="text-xl font-bold tracking-wide text-white">M Justice Partners</h1>
@@ -29,77 +24,74 @@
         </div>
         <div class="w-full md:w-1/3 relative">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
-            <input type="text" id="globalSearch" oninput="fetchCases()" placeholder="ค้นหาด่วน (เลขคดีดำ, ศาล, รายละเอียด)..." 
+            <input type="text" id="globalSearch" placeholder="ค้นหาด่วน (เลขคดีดำ, ศาล, รายละเอียด)..."
                 class="w-full bg-slate-900 text-sm text-slate-200 pl-10 pr-4 py-2.5 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner" />
         </div>
     </header>
 
-    <!-- Main Container -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
-        
-        <!-- 2. Dashboard Section: Deadlines & Metrics[cite: 1] -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- การแจ้งเตือนนัดหมายวิกฤต[cite: 1] -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:col-span-2 flex flex-col">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                    <h2 class="font-bold text-slate-800 flex items-center gap-2">🚨 กำหนดนัดหมายสำคัญที่กำลังจะถึง</h2>
-                    <span class="bg-red-50 text-red-600 text-xs px-2.5 py-1 rounded-full font-medium border border-red-100">เรียลไทม์</span>
-                </div>
-                <div class="overflow-x-auto flex-1">
-                    <table class="w-full text-left text-sm">
-                        <thead>
-                            <tr class="text-slate-500 border-b border-slate-100">
-                                <th class="pb-2">วัน-เวลานัด</th>
-                                <th class="pb-2">เลขคดี</th>
-                                <th class="pb-2">ศาล</th>
-                                <th class="pb-2">ประเภทนัด</th>
-                            </tr>
-                        </thead>
-                        <tbody id="deadlineTableBody" class="text-slate-600 divide-y divide-slate-50">
-                            <!-- ข้อมูลจะถูกโหลดเข้าตรงนี้ด้วย JavaScript -->
-                            <tr><td colspan="3" class="py-4 text-center text-slate-400">กำลังโหลดข้อมูลปฏิทินนัดหมาย...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
 
-            <!-- สถิติคดีความย่อ[cite: 1] -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
-                <div>
-                    <h2 class="font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4">📊 สถานะคดีในความรับผิดชอบ</h2>
-                    <div class="space-y-3.5" id="metricsContainer">
-                        <!-- โหลดข้อมูลสถิติด้วย JavaScript -->
-                        <p class="text-center text-slate-400 py-4">กำลังคำนวณสถิติ...</p>
+        <!-- ==================== หน้าคดีความ (default) ==================== -->
+        <div id="casesPage">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- นัดหมายสำคัญที่กำลังจะถึง -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:col-span-2 flex flex-col">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                        <h2 class="font-bold text-slate-800 flex items-center gap-2">🚨 กำหนดนัดหมายสำคัญที่กำลังจะถึง</h2>
+                        <span class="bg-red-50 text-red-600 text-xs px-2.5 py-1 rounded-full font-medium border border-red-100">เรียลไทม์</span>
+                    </div>
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="text-slate-500 border-b border-slate-100">
+                                    <th class="pb-2">วัน-เวลานัด</th>
+                                    <th class="pb-2">เลขคดี</th>
+                                    <th class="pb-2">ศาล</th>
+                                    <th class="pb-2">ประเภทนัด</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deadlineTableBody" class="text-slate-600 divide-y divide-slate-50">
+                                <tr><td colspan="4" class="py-4 text-center text-slate-400">กำลังโหลดข้อมูลปฏิทินนัดหมาย...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <button onclick="toggleModal(true)" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
-                    ➕ บันทึกข้อมูลคดีใหม่
-                </button>
-                <button onclick="toggleScheduleModal(true)" class="w-full mt-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
-                    🗓️ ลงบันทึกวันนัดหมายเพิ่ม
-                </button>
-                <button onclick="toggleStatusModal(true)" class="w-full mt-2 bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
-                    🔄 อัปเดตสถานะคดีความ
-                </button>
-                <!-- แถบเมนูด้านข้าง (Sidebar) -->
-<nav class="space-y-1">
-    <a href="#" onclick="switchPage('cases')" id="menuCases" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-700">
-        ⚖️ คดีความทั้งหมด
-    </a>
-    <a href="#" onclick="switchPage('contacts')" id="menuContacts" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900">
-        📞 สมุดรายชื่อผู้ติดต่อ
-    </a>
-</nav>
-            </div>
-        </div>
 
-        <!-- 3. Core Case Ledger Table[cite: 1] -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4 mb-4 gap-3">
-                <h2 class="font-bold text-lg text-slate-900">🗂️ ทะเบียนคดีความทั้งหมด</h2>
-                <div class="flex items-center gap-2">
-                    <select id="filterStatus" onchange="fetchCases()" class="bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
+                <!-- สถิติคดี + เมนู -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                    <div>
+                        <h2 class="font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4">📊 สถานะคดีในความรับผิดชอบ</h2>
+                        <div class="space-y-3.5" id="metricsContainer">
+                            <p class="text-center text-slate-400 py-4">กำลังคำนวณสถิติ...</p>
+                        </div>
+                    </div>
+                    <button type="button" id="btnAddCase" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
+                        ➕ บันทึกข้อมูลคดีใหม่
+                    </button>
+                    <button type="button" id="btnAddSchedule" class="w-full mt-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
+                        🗓️ ลงบันทึกวันนัดหมายเพิ่ม
+                    </button>
+                    <button type="button" id="btnUpdateStatus" class="w-full mt-2 bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
+                        🔄 อัปเดตสถานะคดีความ
+                    </button>
+
+                    <nav class="space-y-1 mt-4 pt-4 border-t border-slate-100">
+                        <a href="#" id="menuCases" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-700">
+                            ⚖️ คดีความทั้งหมด
+                        </a>
+                        <a href="#" id="menuContacts" class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+                            📞 สมุดรายชื่อผู้ติดต่อ
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- ทะเบียนคดีความทั้งหมด -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mt-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4 mb-4 gap-3">
+                    <h2 class="font-bold text-lg text-slate-900">🗂️ ทะเบียนคดีความทั้งหมด</h2>
+                    <select id="filterStatus" class="bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
                         <option value="ALL">แสดงสถานะทั้งหมด</option>
                         <option value="Draft">Draft (ร่างคำฟ้อง)</option>
                         <option value="In_Progress">In Progress (พิจารณาคดี)</option>
@@ -108,71 +100,179 @@
                         <option value="Closed">Closed (ปิดคดีแล้ว)</option>
                     </select>
                 </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                <th class="px-6 py-3">รหัสคดี / เลขดำ-แดง</th>
+                                <th class="px-6 py-3">ศาล / ประเภท</th>
+                                <th class="px-6 py-3">สรุปข้อหา</th>
+                                <th class="px-6 py-3">ทุนทรัพย์ (บาท)</th>
+                                <th class="px-6 py-3 text-blue-600">ประเภทนัดล่าสุด</th>
+                                <th class="px-6 py-3 text-blue-600">วัน-เวลานัดล่าสุด</th>
+                                <th class="px-6 py-3">สถานะ</th>
+                                <th class="px-6 py-3 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="caseTableBody" class="divide-y divide-slate-100 text-sm text-slate-700"></tbody>
+                    </table>
+                    <div class="flex items-center justify-between px-2 py-4 border-t border-slate-200">
+                        <div class="text-xs text-slate-500 font-medium">
+                            แสดงคดีที่ <span id="pageStart" class="font-semibold text-slate-700">1</span> ถึง
+                            <span id="pageEnd" class="font-semibold text-slate-700">10</span> จากทั้งหมด
+                            <span id="totalCasesCount" class="font-semibold text-slate-700">0</span> คดี
+                        </div>
+                        <div class="inline-flex gap-2">
+                            <button type="button" id="btnPrevPage" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                ⬅️ หน้าก่อนหน้า
+                            </button>
+                            <button type="button" id="btnNextPage" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                หน้าถัดไป ➡️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== หน้าสมุดรายชื่อ (ซ่อนไว้ตอนแรก) ==================== -->
+        <div id="contactsPage" class="hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-5 border-b border-slate-200 mb-6 gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">📞 สมุดรายชื่อผู้ติดต่อ</h1>
+                    <p class="text-sm text-slate-500 mt-1">จัดการข้อมูลลูกความ พยาน และบุคคลที่เกี่ยวข้องกับคดีความ</p>
+                </div>
+                <button type="button" id="btnAddContact" class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition-colors">
+                    ➕ เพิ่มผู้ติดต่อใหม่
+                </button>
             </div>
 
-            <!-- 📊 ตารางแสดงข้อมูลคดีทั้งหมด -->
-    <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden mt-6">
-        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
-            <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">📋 รายการคดีความทั้งหมดในระบบ</h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-slate-100 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        <th class="px-6 py-3">รหัสคดี / เลขดำ-แดง</th>
-                        <th class="px-6 py-3">ศาล / ประเภท</th>
-                        <th class="px-6 py-3">สรุปข้อหา</th>
-                        <th class="px-6 py-3">ทุนทรัพย์ (บาท)</th>
-                        <!-- 📅 คอลัมน์ที่เพิ่มใหม่ -->
-                        <th class="px-6 py-3 text-blue-600">ประเภทนัดล่าสุด</th>
-                        <th class="px-6 py-3 text-blue-600">วัน-เวลานัดล่าสุด</th>
-                        <th class="px-6 py-3">สถานะ</th>
-                        <th class="px-6 py-3 text-center">จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody id="caseTableBody" class="divide-y divide-slate-100 text-sm text-slate-700">
-                    <!-- ข้อมูลจะถูกโหลดเข้ามาแสดงผลด้วย JavaScript -->
-                </tbody>
-            </table>
-            <div class="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
-            <div class="text-xs text-slate-500 font-medium">
-                แสดงคดีที่ <span id="pageStart" class="font-semibold text-slate-700">1</span> ถึง 
-                <span id="pageEnd" class="font-semibold text-slate-700">10</span> จากทั้งหมด 
-                <span id="totalCasesCount" class="font-semibold text-slate-700">0</span> คดี
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-500">
+                        <thead class="text-xs font-semibold text-slate-600 uppercase tracking-wider bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="px-6 py-3.5">ชื่อ-นามสกุล / เลขบัตร</th>
+                                <th class="px-6 py-3.5">ฐานะในคดี</th>
+                                <th class="px-6 py-3.5">ผูกกับคดี</th>
+                                <th class="px-6 py-3.5">ข้อมูลการติดต่อ</th>
+                                <th class="px-6 py-3.5 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contactTableBody"></tbody>
+                    </table>
+                </div>
             </div>
-            <div class="inline-flex gap-2">
-                <button onclick="changePage(-1)" id="btnPrevPage" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                ⬅️ หน้าก่อนหน้า
-                </button>
-        <button onclick="changePage(1)" id="btnNextPage" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                หน้าถัดไป ➡️
-        </button>
-    </div>
-</div>
+        </div>
+    </main>
+
+    <!-- ==================== MODAL: เพิ่มคดีความใหม่ ==================== -->
+    <div id="caseModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h3 class="text-lg font-bold text-slate-900">📝 เพิ่มรายละเอียดคดีความใหม่</h3>
+                <button type="button" id="btnCloseCaseModal" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
+            </div>
+            <form id="caseForm" class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">หมายเลขคดีดำ *</label>
+                        <input type="text" id="black_number" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น ผบ.552/2569" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">หมายเลขคดีแดง (ถ้ามี)</label>
+                        <input type="text" id="red_number" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น พ.112/2569" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ชื่อศาล *</label>
+                    <input type="text" id="court_name" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น ศาลแพ่งกรุงเทพใต้" />
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ประเภทคดี</label>
+                        <select id="case_type" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
+                            <option value="Civil">Civil (คดีแพ่ง)</option>
+                            <option value="Criminal">Criminal (คดีอาญา)</option>
+                            <option value="Labor">Labor (คดีแรงงาน)</option>
+                            <option value="Administrative">Administrative (คดีปกครอง)</option>
+                            <option value="Other">Other (คดีอื่นๆ)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ทุนทรัพย์ (บาท)</label>
+                        <input type="number" step="0.01" id="claim_amount" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="0.00" />
+                    </div>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">👥 ข้อมูลคู่ความและการรับงาน</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อโจทก์/ผู้ร้อง *</label>
+                            <input type="text" id="plaintiff_name" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" placeholder="ระบุชื่อโจทก์ หรือผู้ร้อง" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อจำเลย/ผู้คัดค้าน *</label>
+                            <input type="text" id="defendant_name" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" placeholder="ระบุชื่อจำเลย หรือผู้คัดค้าน" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">สถานะฝั่งลูกความของคุณทนาย *</label>
+                        <select id="client_role" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
+                            <option value="โจทก์">โจทก์ (เราเป็นทนายโจทก์)</option>
+                            <option value="จำเลย">จำเลย (เราเป็นทนายจำเลย)</option>
+                            <option value="ผู้ร้อง">ผู้ร้อง (เราเป็นทนายผู้ร้องขอต่อศาล)</option>
+                            <option value="ผู้คัดค้าน">ผู้คัดค้าน (เราเป็นทนายฝั่งยื่นคำคัดค้าน)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สรุปข้อหา/พฤติการณ์คดี</label>
+                    <textarea id="description" rows="2" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="ระบุประเด็นสำคัญประจำคดีโดยย่อ..."></textarea>
+                </div>
+                <div class="border-t border-dashed border-slate-200 pt-3">
+                    <h4 class="text-xs font-bold text-blue-600 mb-2">🗓️ ลงบันทึกวันนัดหมายศาลนัดแรก</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">วันและเวลานัดหมาย *</label>
+                            <input type="datetime-local" id="event_date" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ประเภทนัดหมาย *</label>
+                            <input type="text" id="event_type" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น นัดชี้สองสถาน / สืบพยานโจทก์" />
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                    <button type="button" id="btnCancelCaseModal" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">บันทึกข้อมูล</button>
+                </div>
+            </form>
         </div>
     </div>
-        </div>
+
+    <!-- ==================== MODAL: ลงบันทึกวันนัดหมายเพิ่ม ==================== -->
     <div id="scheduleModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl max-h-[90vh] overflow-y-auto transform transition-all">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <h3 class="text-lg font-bold text-slate-900">🗓️ เพิ่มวันนัดหมายครั้งต่อไปสำหรับคดีเดิม</h3>
-                <button onclick="toggleScheduleModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
+                <button type="button" id="btnCloseScheduleModal" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
             </div>
             <div class="p-6 space-y-4">
                 <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-2">
                     <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">🔍 เครื่องมือช่วยค้นหาคดีความ</span>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <button onclick="filterCasesForSchedule('today')" class="text-xs bg-white border border-slate-300 hover:bg-slate-100 font-medium py-1.5 px-3 rounded text-slate-700">📅 แสดงเฉพาะคดีที่มีนัดวันนี้</button>
-                        <input type="text" id="filterByScheduleType" oninput="filterCasesForSchedule('type')" placeholder="กรองด้วยประเภทนัด (เช่น สืบพยาน)" class="w-full bg-white border border-slate-300 text-xs rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500" />
+                        <button type="button" id="btnFilterScheduleToday" class="text-xs bg-white border border-slate-300 hover:bg-slate-100 font-medium py-1.5 px-3 rounded text-slate-700">📅 แสดงเฉพาะคดีที่มีนัดวันนี้</button>
+                        <input type="text" id="filterByScheduleType" placeholder="กรองด้วยประเภทนัด (เช่น สืบพยาน)" class="w-full bg-white border border-slate-300 text-xs rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500" />
                     </div>
-                    <button onclick="loadAllCasesToDropdown()" class="text-xs text-blue-600 underline block mt-1">แสดงคดีทั้งหมดใหม่</button>
+                    <button type="button" id="btnResetScheduleFilter" class="text-xs text-blue-600 underline block mt-1">แสดงคดีทั้งหมดใหม่</button>
                 </div>
 
-                <form id="scheduleForm" onsubmit="saveAdditionalSchedule(event)" class="space-y-4">
+                <form id="scheduleForm" class="space-y-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">เลือกคดีความ *</label>
-                        <select id="schedule_case_id" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
-                            </select>
+                        <select id="schedule_case_id" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500"></select>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -189,7 +289,7 @@
                         <textarea id="add_event_notes" rows="2" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น นำส่งเอกสารหมาย ล.1 ให้เรียบร้อยก่อนวันนัด..."></textarea>
                     </div>
                     <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
-                        <button type="button" onclick="toggleScheduleModal(false)" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+                        <button type="button" id="btnCancelScheduleModal" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">บันทึกวันนัดเพิ่ม</button>
                     </div>
                 </form>
@@ -197,60 +297,51 @@
         </div>
     </div>
 
-    <!-- 🔄 หน้าต่างอัปเดตสถานะคดีความ (เวอร์ชันพิมพ์ค้นหาอัจฉริยะ) -->
-<div id="statusModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md transform transition-all">
-        <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-            <h3 class="text-lg font-bold text-slate-900">🔄 ปรับอัปเดตสถานะคดีความ</h3>
-            <button type="button" onclick="toggleStatusModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
-        </div>
-        <form id="statusForm" onsubmit="updateCaseStatus(event)" class="p-6 space-y-4">
-            
-            <!-- ช่องค้นหาคดีความอัจฉริยะ -->
-            <div class="relative">
-                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">เลือกคดีที่ต้องการเปลี่ยนสถานะ *</label>
+    <!-- ==================== MODAL: อัปเดตสถานะคดีความ ==================== -->
+    <div id="statusModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md">
+            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h3 class="text-lg font-bold text-slate-900">🔄 ปรับอัปเดตสถานะคดีความ</h3>
+                <button type="button" id="btnCloseStatusModal" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
+            </div>
+            <form id="statusForm" class="p-6 space-y-4">
                 <div class="relative">
-                    <input type="text" id="status_case_search" placeholder="🔍 พิมพ์ คดีดำ หรือ ชื่อศาล เพื่อค้นหา..." autocomplete="off"
-                        class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" 
-                        oninput="filterStatusCaseDropdown()">
-                    
-                    <!-- Hidden Input สำหรับแอบล็อกค่า case_id จริงส่งเข้าฐานข้อมูล -->
-                    <input type="hidden" id="status_case_id" required>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">เลือกคดีที่ต้องการเปลี่ยนสถานะ *</label>
+                    <div class="relative">
+                        <input type="text" id="status_case_search" placeholder="🔍 พิมพ์ คดีดำ หรือ ชื่อศาล เพื่อค้นหา..." autocomplete="off"
+                            class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
+                        <input type="hidden" id="status_case_id" required>
+                    </div>
+                    <div id="statusCaseDropdownList" class="hidden absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 shadow-lg rounded-lg z-50 text-sm"></div>
                 </div>
-                
-                <!-- กล่องรายการคดีจะเด้งลอยลงมาด้านล่างเวลามีการค้นหา -->
-                <div id="statusCaseDropdownList" class="hidden absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 shadow-lg rounded-lg z-50 text-sm">
-                    <!-- รายชื่อคดีจะถูกพ่นใส่ตรงนี้ด้วย JavaScript -->
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สถานะคดีใหม่ *</label>
+                    <select id="new_case_status" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
+                        <option value="Draft">Draft (ร่างคำร้อง/คำฟ้อง)</option>
+                        <option value="In_Progress">In Progress (กำลังพิจารณาคดี/สืบพยาน)</option>
+                        <option value="Appealing">Appealing (อยู่ระหว่างชั้นอุทธรณ์/ฎีกา)</option>
+                        <option value="Execution">Execution (บังคับคดี)</option>
+                        <option value="Closed">Closed (ปิดสำนวนคดีถาวร)</option>
+                    </select>
                 </div>
-            </div>
 
-            <!-- ช่องเลือกสถานะใหม่ -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สถานะคดีใหม่ *</label>
-                <select id="new_case_status" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
-                    <option value="Draft">Draft (ร่างคำร้อง/คำฟ้อง)</option>
-                    <option value="In_Progress">In Progress (กำลังพิจารณาคดี/สืบพยาน)</option>
-                    <option value="Appealing">Appealing (อยู่ระหว่างชั้นอุทธรณ์/ฎีกา)</option>
-                    <option value="Execution">Execution (บังคับคดี)</option>
-                    <option value="Closed">Closed (ปิดสำนวนคดีถาวร)</option>
-                </select>
-            </div>
-
-            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
-                <button type="button" onclick="toggleStatusModal(false)" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
-                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">อัปเดตสถานะ</button>
-            </div>
-        </form>
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                    <button type="button" id="btnCancelStatusModal" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+                    <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">อัปเดตสถานะ</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
-    <!-- 📝 หน้าต่าง Pop-up: แก้ไขข้อมูลคดีความ -->
+
+    <!-- ==================== MODAL: แก้ไขข้อมูลคดีความ ==================== -->
     <div id="editCaseModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl max-h-[90vh] overflow-y-auto transform transition-all">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <h3 class="text-lg font-bold text-slate-900">📝 แก้ไขข้อมูลคดีความ</h3>
-                <button onclick="toggleEditModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
+                <button type="button" id="btnCloseEditModal" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
             </div>
-            <form id="editCaseForm" onsubmit="updateCaseDetails(event)" class="p-6 space-y-4">
+            <form id="editCaseForm" class="p-6 space-y-4">
                 <input type="hidden" id="edit_case_id" />
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -281,17 +372,17 @@
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ทุนทรัพย์ (บาท)</label>
                         <input type="number" step="0.01" id="edit_claim_amount" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
                     </div>
-                    <!-- 👥 ส่วนที่เพิ่มใหม่: ข้อมูลคู่ความของคดี -->
+                </div>
                 <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
                     <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">👥 ข้อมูลคู่ความและการรับงาน</span>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อโจทก์/ผู้ร้อง *</label>
-                            <input type="text" id="edit_plaintiff_name" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" placeholder="ระบุชื่อโจทก์ หรือผู้ร้อง" />
+                            <input type="text" id="edit_plaintiff_name" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อจำเลย/ผู้คัดค้าน *</label>
-                            <input type="text" id="edit_defendant_name" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" placeholder="ระบุชื่อจำเลย หรือผู้คัดค้าน" />
+                            <input type="text" id="edit_defendant_name" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
                         </div>
                     </div>
                     <div>
@@ -303,7 +394,6 @@
                             <option value="ผู้คัดค้าน">ผู้คัดค้าน (เราเป็นทนายฝั่งยื่นคำคัดค้าน)</option>
                         </select>
                     </div>
-                </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สรุปข้อหา/พฤติการณ์คดี</label>
@@ -323,30 +413,30 @@
                     </div>
                 </div>
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
-                    <button type="button" onclick="toggleEditModal(false)" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+                    <button type="button" id="btnCancelEditModal" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">บันทึกการแก้ไข</button>
                 </div>
             </form>
         </div>
     </div>
-    <!-- 🔍 หน้าต่าง Pop-up: แสดงรายละเอียดคดีแบบเจาะลึก (View Case Details) -->
+
+    <!-- ==================== MODAL: รายละเอียดคดีเชิงลึก (view-only) ==================== -->
     <div id="viewDetailsModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg transform transition-all overflow-hidden">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
             <div class="bg-slate-950 text-white px-6 py-4 flex items-center justify-between">
                 <div>
                     <h3 class="text-md font-bold" id="view_title_id">รายละเอียดคดีความ</h3>
                     <p class="text-xs text-slate-400" id="view_title_court"></p>
                 </div>
-                <button onclick="toggleViewModal(false)" class="text-slate-400 hover:text-white text-2xl font-semibold">&times;</button>
+                <button type="button" id="btnCloseViewModal" class="text-slate-400 hover:text-white text-2xl font-semibold">&times;</button>
             </div>
             <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <input type="hidden" id="view_case_id_hidden">
                 <div class="grid grid-cols-2 gap-4 border-b border-slate-100 pb-3">
                     <div><span class="text-xs text-slate-400 block font-medium">หมายเลขคดีดำ</span><b class="text-slate-800" id="view_black_num"></b></div>
                     <div><span class="text-xs text-slate-400 block font-medium">หมายเลขคดีแดง</span><b class="text-red-500" id="view_red_num"></b></div>
                 </div>
-                
-                <!-- 👥 โซนจัดแสดงข้อมูลคู่ความที่ลงลึกรายละเอียดสำหรับกดดูรายละเอียด -->
-                 <input type="hidden" id="view_case_id_hidden">
+
                 <div class="bg-blue-50/50 rounded-xl p-4 border border-blue-100 space-y-3">
                     <span class="text-xs font-bold text-blue-700 tracking-wider uppercase block">👥 ข้อมูลคู่ความในคดี</span>
                     <div class="grid grid-cols-1 gap-2 text-sm text-slate-700">
@@ -362,1229 +452,78 @@
                     <span class="text-xs text-slate-400 block font-medium">ประเด็นข้อหา / รายละเอียดพฤติการณ์</span>
                     <p class="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 leading-relaxed whitespace-pre-line" id="view_desc"></p>
                 </div>
+
+                <div class="pt-5 border-t border-slate-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">👥 รายชื่อคู่ความและพยานประจำคดี</h4>
+                        <button type="button" id="btnAddParticipant" class="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">
+                            ➕ เพิ่มคู่ความในคดีนี้
+                        </button>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
+                        <table class="w-full text-xs text-left text-slate-600">
+                            <thead class="bg-slate-100 text-slate-700 font-semibold uppercase">
+                                <tr>
+                                    <th class="px-4 py-2">ชื่อ-นามสกุล</th>
+                                    <th class="px-4 py-2">ฐานะ</th>
+                                    <th class="px-4 py-2">ข้อมูลติดต่อ / เลขบัตร</th>
+                                </tr>
+                            </thead>
+                            <tbody id="caseParticipantsTableBody">
+                                <tr><td colspan="3" class="text-center py-3 text-slate-400">ยังไม่มีรายชื่อคู่ความผูกกับคดีนี้</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <!-- 👥 บล็อกแสดงข้อมูลคู่ความประจำคดี (เพิ่มเข้าไปใน Case Details Modal เดิม ก่อนปุ่มปิดหน้าต่าง) -->
-<div class="mt-6 pt-5 border-t border-slate-200">
-    <div class="flex items-center justify-between mb-3">
-        <h4 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            👥 รายชื่อคู่ความและพยานประจำคดี
-        </h4>
-        <!-- ปุ่มกดเพิ่มรายชื่อ-->
-        <!-- ปรับโค้ดปุ่มกดเพิ่มคู่ความใน HTML ให้รองรับการส่งค่าตรง -->
-        <button type="button" onclick="openContactModalFromCase()" class="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">
-        ➕ เพิ่มคู่ความในคดีนี้
-        </button>
-    </div>
-    
-    <!-- ตารางรายชื่อคู่ความเฉพาะของคดีนี้ -->
-    <div class="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
-        <table class="w-full text-xs text-left text-slate-600">
-            <thead class="bg-slate-100 text-slate-700 font-semibold uppercase">
-                <tr>
-                    <th class="px-4 py-2">ชื่อ-นามสกุล</th>
-                    <th class="px-4 py-2">ฐานะ</th>
-                    <th class="px-4 py-2">ข้อมูลติดต่อ / เลขบัตร</th>
-                </tr>
-            </thead>
-            <tbody id="caseParticipantsTableBody">
-                <!-- รายชื่อคู่ความในคดีนี้จะถูกพ่นด้วย JavaScript -->
-                <tr><td colspan="3" class="text-center py-3 text-slate-400">ยังไม่มีรายชื่อคู่ความผูกกับคดีนี้</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
             <div class="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-end">
-                <button onclick="toggleViewModal(false)" class="bg-slate-900 text-white text-xs font-medium py-2 px-4 rounded-lg hover:bg-slate-800 transition-colors">ปิดหน้าต่าง</button>
+                <button type="button" id="btnCloseViewModalFooter" class="bg-slate-900 text-white text-xs font-medium py-2 px-4 rounded-lg hover:bg-slate-800 transition-colors">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
-    <!-- ต่อล่างสุดจากตึก HTML เดิมที่เป็นส่วนจัดการคดี (วางก่อนปิดแท็ก </main> หรือโซนที่เป็น Content) ==================== หน้าสมุดรายชื่อ (CONTACTS PAGE) ==================== -->
-<div id="contactsPage" class="hidden animate-fadeIn">
-    <!-- ส่วนหัวหน้าตาและปุ่มเพิ่มข้อมูล -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-5 border-b border-slate-200 mb-6 gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">📞 สมุดรายชื่อผู้ติดต่อ</h1>
-            <p class="text-sm text-slate-500 mt-1">จัดการข้อมูลลูกความ พยาน และบุคคลที่เกี่ยวข้องกับคดีความ</p>
-        </div>
-        <button onclick="toggleContactModal(true)" class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition-colors">
-            ➕ เพิ่มผู้ติดต่อใหม่
-        </button>
-    </div>
 
-    <!-- บล็อกตารางรายชื่อ -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-slate-500">
-                <thead class="text-xs font-semibold text-slate-600 uppercase tracking-wider bg-slate-50 border-b border-slate-200">
-                    <tr>
-                        <th class="px-6 py-3.5">ชื่อ-นามสกุล / เลขบัตร</th>
-                        <th class="px-6 py-3.5">ฐานะในคดี</th>
-                        <th class="px-6 py-3.5">ผูกกับคดี</th>
-                        <th class="px-6 py-3.5">ข้อมูลการติดต่อ</th>
-                        <th class="px-6 py-3.5 text-center">จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody id="contactTableBody">
-                    <!-- ข้อมูลจะถูกพ่นมาตรงนี้ด้วย JavaScript -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- ==================== POP-UP MODAL เพิ่ม/แก้ไข ผู้ติดต่อ ==================== -->
-<div id="contactModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-scaleIn">
-        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-            <h3 class="text-lg font-bold text-slate-800" id="contactModalTitle">เพิ่มผู้ติดต่อใหม่</h3>
-            <button onclick="toggleContactModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-medium">✕</button>
-        </div>
-        <form id="contactForm" onsubmit="saveContact(event)" class="p-6 space-y-4">
-            <input type="hidden" id="contact_id">
-            
-            <input type="hidden" id="contact_case_id">
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อ-นามสกุลคู่ความ *</label>
-                <input type="text" id="cFullName" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+    <!-- ==================== MODAL: เพิ่ม/แก้ไข ผู้ติดต่อ ==================== -->
+    <div id="contactModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-800" id="contactModalTitle">เพิ่มผู้ติดต่อใหม่</h3>
+                <button type="button" id="btnCloseContactModal" class="text-slate-400 hover:text-slate-600 text-xl font-medium">✕</button>
             </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form id="contactForm" class="p-6 space-y-4">
+                <input type="hidden" id="contact_id">
+                <input type="hidden" id="contact_case_id">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">ฐานะในคดี (Role) *</label>
-                    <select id="cRole" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                        <option value="Plaintiff">โจทก์</option>
-                        <option value="Defendant">จำเลย</option>
-                        <option value="Petitioner">ผู้ร้อง</option>
-                        <option value="Objector">ผู้คัดค้าน</option>
-                        <option value="Witness">พยาน</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">เลขประจำตัวประชาชน (Citizen ID)</label>
-                    <input type="text" id="cCitizenId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="X-XXXX-XXXXX-XX-X">
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">ข้อมูลการติดต่อ (เบอร์โทร/ที่อยู่/ไลน์)</label>
-                <textarea id="cContactInfo" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="ระบุเบอร์โทรศัพท์ หรือที่อยู่ติดต่อ..."></textarea>
-            </div>
-
-            <div class="pt-2 flex justify-end gap-3 border-t border-slate-100">
-                <button type="button" onclick="toggleContactModal(false)" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">ยกเลิก</button>
-                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow">บันทึกรายชื่อ</button>
-            </div>
-        </form>
-    </div>
-</div>
-    </main>
-
-    <!-- 4. Modal: บันทึกข้อมูลคดีความใหม่ -->
-    <div id="caseModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl max-h-[90vh] overflow-y-auto transform transition-all">
-            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                <h3 class="text-lg font-bold text-slate-900">📝 เพิ่มรายละเอียดคดีความใหม่</h3>
-                <button onclick="toggleModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-semibold">&times;</button>
-            </div>
-            <form id="caseForm" onsubmit="saveCase(event)" class="p-6 space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">หมายเลขคดีดำ *</label>
-                        <input type="text" id="black_number" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น ผบ.552/2569" />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">หมายเลขคดีแดง (ถ้ามี)</label>
-                        <input type="text" id="red_number" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น พ.112/2569" />
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ชื่อศาล *</label>
-                    <input type="text" id="court_name" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น ศาลแพ่งกรุงเทพใต้" />
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อ-นามสกุลคู่ความ *</label>
+                    <input type="text" id="cFullName" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ประเภทคดี</label>
-                        <select id="case_type" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
-                            <option value="Civil">Civil (คดีแพ่ง)</option>
-                            <option value="Criminal">Criminal (คดีอาญา)</option>
-                            <option value="Labor">Labor (คดีแรงงาน)</option>
-                            <option value="Administrative">Administrative (คดีปกครอง)</option>
-                            <option value="Other">Other (คดีอื่นๆ)</option>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">ฐานะในคดี (Role) *</label>
+                        <select id="cRole" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            <option value="Plaintiff">โจทก์</option>
+                            <option value="Defendant">จำเลย</option>
+                            <option value="Petitioner">ผู้ร้อง</option>
+                            <option value="Objector">ผู้คัดค้าน</option>
+                            <option value="Witness">พยาน</option>
                         </select>
                     </div>
-                    
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ทุนทรัพย์ (บาท)</label>
-                        <input type="number" step="0.01" id="claim_amount" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="0.00" />
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">เลขประจำตัวประชาชน (Citizen ID)</label>
+                        <input type="text" id="cCitizenId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="X-XXXX-XXXXX-XX-X">
                     </div>
-                <!-- 👥 ส่วนที่เพิ่มใหม่: ข้อมูลคู่ความของคดี -->
-                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
-                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">👥 ข้อมูลคู่ความและการรับงาน</span>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อโจทก์/ผู้ร้อง *</label>
-                            <input type="text" id="plaintiff_name" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" placeholder="ระบุชื่อโจทก์ หรือผู้ร้อง" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อจำเลย/ผู้คัดค้าน *</label>
-                            <input type="text" id="defendant_name" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" placeholder="ระบุชื่อจำเลย หรือผู้คัดค้าน" />
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">สถานะฝั่งลูกความของคุณทนาย *</label>
-                        <select id="client_role" required class="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
-                            <option value="โจทก์">โจทก์ (เราเป็นทนายโจทก์)</option>
-                            <option value="จำเลย">จำเลย (เราเป็นทนายจำเลย)</option>
-                            <option value="ผู้ร้อง">ผู้ร้อง (เราเป็นทนายผู้ร้องขอต่อศาล)</option>
-                            <option value="ผู้คัดค้าน">ผู้คัดค้าน (เราเป็นทนายฝั่งยื่นคำคัดค้าน)</option>
-                        </select>
-                    </div>
-                </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">สรุปข้อหา/พฤติการณ์คดี</label>
-                    <textarea id="description" rows="2" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="ระบุประเด็นสำคัญประจำคดีโดยย่อ..."></textarea>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ข้อมูลการติดต่อ (เบอร์โทร/ที่อยู่/ไลน์)</label>
+                    <textarea id="cContactInfo" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="ระบุเบอร์โทรศัพท์ หรือที่อยู่ติดต่อ..."></textarea>
                 </div>
-                
-                <div class="border-t border-dashed border-slate-200 pt-3">
-                    <h4 class="text-xs font-bold text-blue-600 mb-2">🗓️ ลงบันทึกวันนัดหมายศาลนัดแรก</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">วันและเวลานัดหมาย *</label>
-                            <input type="datetime-local" id="event_date" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">ประเภทนัดหมาย *</label>
-                            <input type="text" id="event_type" required class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" placeholder="เช่น นัดชี้สองสถาน / สืบพยานโจทก์" />
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
-                    <button type="button" onclick="toggleModal(false)" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">บันทึกข้อมูล</button>
+                <div class="pt-2 flex justify-end gap-3 border-t border-slate-100">
+                    <button type="button" id="btnCancelContactModal" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">ยกเลิก</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow">บันทึกรายชื่อ</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 📜 5. JavaScript ส่วนควบคุมการทำงานหลังบ้านร่วมกับ Supabase -->
-    <script>
-        // ➕ ตัวแปรสำหรับคุมระบบเปลี่ยนหน้าคดีความ
-        let currentPage = 1;
-        const itemsPerPage = 10;
-        // 🔒 นำข้อมูล API คีย์ของตารางคดีใน Supabase มาใส่ตรงนี้
-        const SUPABASE_URL = "https://vktpxtjocwssdneccukz.supabase.co"; 
-        const SUPABASE_ANON_KEY = "sb_publishable_d9hN5dKSkMJ9Hz240uuw7A_CT5PBSmM"; 
-        
-        // เริ่มต้นสร้างตัวแปร Client เชื่อมต่อฐานข้อมูล
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        // ➕ ประกาศตัวแปรส่วนกลางสำหรับจำว่าตอนนี้กำลังเปิดดูคดีรหัสอะไรอยู่
-        let currentViewingCaseId = null;
-        let allCasesForStatusUpdate = []; // เก็บอาเรย์คดีสำหรับใช้ทำระบบเสิร์ชหาใน Modal อัปเดตสถานะ
-
-        // เปิด-ปิด หน้าต่างกรอกข้อมูลคดีใหม่
-        function toggleModal(show) {
-            const modal = document.getElementById('caseModal');
-            if (show) modal.classList.remove('hidden');
-            else {
-                modal.classList.add('hidden');
-                document.getElementById('caseForm').reset();
-            }
-        }
-
-        // ดึงข้อมูลและอัปเดตระบบ แสดงผลบนเว็บทันทีที่เปิดหน้า
-        document.addEventListener("DOMContentLoaded", () => {
-            fetchCases();
-            fetchSchedules();
-            fetchMetrics(); // ➕ สั่งรันคำนวณสถิติเปิดหน้าแรก
-        });
-
-        // ฟังก์ชันหลัก: ดึงข้อมูลคดีทั้งหมด (รองรับ Filter และ Search บาร์ด่วนด้วย)[cite: 1]
-        // ฟังก์ชัน: ดึงข้อมูลคดีทั้งหมดมาแสดงในตาราง พร้อมเชื่อมโยงข้อมูลวันนัดล่าสุด
-        // 📥 ฟังก์ชันดึงข้อมูลคดีความ (เวอร์ชันผสมระบบค้นหา + กรองสถานะ + จำกัด 10 คดีต่อหน้า)
-        async function fetchCases() {
-            const tbody = document.getElementById('caseTableBody');
-            if (!tbody) return;
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-slate-400">⏳ กำลังโหลดข้อมูลคดีความ...</td></tr>`;
-
-            // 📑 คำนวณจุดเริ่มต้นและจุดสิ้นสุดของแถวข้อมูลที่จะดึงประจำหน้านั้นๆ (หน้าละ 10 คดี)
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
-
-            try {
-                // 1. ค้นหาคำค้นหาด่วน (ถ้ามี)
-                const searchVal = document.getElementById('globalSearch').value.trim();
-                const statusFilter = document.getElementById('filterStatus').value;
-                
-                // 🛠️ ปรับแต่ง Query โดยขอผลนับจำนวนคดีทั้งหมดในระบบพ่วงมาด้วย (count: 'exact')
-                let query = supabaseClient
-                    .from('cases')
-                    .select('*', { count: 'exact' })
-                    .order('created_at', { ascending: false });
-
-                if (searchVal !== "") {
-                    query = query.or(`black_number.ilike.%${searchVal}%,red_number.ilike.%${searchVal}%,court_name.ilike.%${searchVal}%,case_status.ilike.%${searchVal}%,description.ilike.%${searchVal}%`);
-                }
-                
-                if (statusFilter !== "ALL") {
-                    query = query.eq('case_status', statusFilter);
-                }
-
-                // 📑 สั่งดึงข้อมูลเฉพาะช่วงแถวที่เราต้องการโชว์ในหน้านี้เท่านั้น
-                const { data: cases, error: caseError, count } = await query.range(from, to);
-                if (caseError) throw caseError;
-
-                // 🔢 อัปเดตตัวเลขจำนวนคดีความบนแถบควบคุมหน้า (Pagination) ด้านล่าง
-                const totalCount = count || 0;
-                document.getElementById('totalCasesCount').innerText = totalCount;
-                document.getElementById('pageStart').innerText = totalCount === 0 ? 0 : from + 1;
-                document.getElementById('pageEnd').innerText = Math.min(to + 1, totalCount);
-
-                // 🔘 ควบคุมการเปิด/ปิดการกดของปุ่มเปลี่ยนหน้า (ป้องกันการกดเลยหน้าที่มีอยู่จริง)
-                document.getElementById('btnPrevPage').disabled = (currentPage === 1);
-                document.getElementById('btnNextPage').disabled = (to + 1 >= totalCount);
-
-                if (!cases || cases.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">❌ ไม่พบข้อมูลคดีความในระบบ</td></tr>`;
-                    return;
-                }
-
-                // 2. ดึงข้อมูลนัดหมายทั้งหมดมาดึงแมตช์หาวันนัดล่าสุดของแต่ละคดี
-                const { data: allSchedules } = await supabaseClient
-                    .from('schedules')
-                    .select('case_id, event_date, event_type')
-                    .order('event_date', { ascending: false });
-
-                tbody.innerHTML = "";
-
-                cases.forEach(c => {
-                    // กรองหาวันนัดล่าสุดของคดีนี้
-                    const caseSchedules = allSchedules ? allSchedules.filter(s => s.case_id === c.case_id) : [];
-                    let latestNextDetail = "— ไม่มีนัด —";
-                    let latestNextDate = "—";
-
-                    if (caseSchedules.length > 0) {
-                        latestNextDetail = caseSchedules[0].event_type;
-                        const d = new Date(caseSchedules[0].event_date);
-                        latestNextDate = d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' }) + ' ' + d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
-                    }
-
-                    // จัดสไตล์สีตามสถานะคดี
-                    let statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-600">ร่างฟ้อง</span>`;
-                    if(c.case_status === 'In_Progress') statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">อยู่ระหว่างพิจารณาคดี</span>`;
-                    if(c.case_status === 'Appealing') statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700">อุทธรณ์/ฎีกา</span>`;
-                    if(c.case_status === 'Execution') statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-300">บังคับคดี</span>`;
-                    if(c.case_status === 'Closed') statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700">ปิดคดี</span>`;
-
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4 font-medium text-slate-900">
-                                <span class="text-xs block text-slate-400 font-mono">${c.case_id}</span>
-                                <div><b class="text-blue-600">ดำ:</b> ${c.black_number}</div>
-                                ${c.red_number ? `<div><b class="text-red-500">แดง:</b> ${c.red_number}</div>` : '<span class="text-xs text-slate-400">—</span>'}
-                            </td>
-                            <td class="px-6 py-4 text-slate-600">
-                                <div class="font-semibold">${c.court_name}</div>
-                                <span class="text-xs bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">${c.case_type}</span>
-                            </td>
-                            <td class="px-6 py-4 max-w-xs truncate text-slate-500" title="${c.description || ''}">${c.description || '—'}</td>
-                            <td class="px-6 py-4 font-mono font-medium">${c.claim_amount ? c.claim_amount.toLocaleString('th-TH', { minimumFractionDigits: 2 }) : '0.00'}</td>
-                            <td class="px-6 py-4 text-xs font-medium text-slate-700 max-w-[150px] truncate">${latestNextDetail}</td>
-                            <td class="px-6 py-4 text-xs font-mono text-slate-600">${latestNextDate}</td>
-                            <td class="px-6 py-4">${statusBadge}</td>
-                            <td class="px-6 py-4 text-center">
-                                <button onclick="openViewModal('${c.case_id}', '${c.black_number}', '${c.red_number || '—'}', '${c.court_name}', \`${c.plaintiff_name || 'ไม่ระบุ'}\`, \`${c.defendant_name || 'ไม่ระบุ'}\`, '${c.client_role || 'ไม่ระบุ'}', \`${c.description || 'ไม่มีรายละเอียดเพิ่มเติม'}\`)" 
-                                    class="text-xs bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 px-2 py-1.5 rounded-lg font-medium transition-colors">
-                                    🔎 เปิดดู
-                                </button>
-                                <button onclick="openEditModal('${c.case_id}', '${c.black_number}', '${c.red_number || ''}', '${c.court_name}', '${c.case_type}', ${c.claim_amount || 0}, \`${c.description || ''}\`, \`${c.plaintiff_name || ''}\`, \`${c.defendant_name || ''}\`, '${c.client_role || 'โจทก์'}\')" 
-                                    class="text-xs bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 px-2 py-1.5 rounded-lg font-medium transition-colors">
-                                    📝 แก้ไข
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-500">❌ โหลดข้อมูลล้มเหลว: ${err.message}</td></tr>`;
-            }
-        }
-        // 🔄 ฟังก์ชันเมื่อกดปุ่ม "หน้าก่อนหน้า" (-1) หรือ "หน้าถัดไป" (1)
-        function changePage(direction) {
-            currentPage += direction;
-            fetchCases(); // รีโหลดข้อมูลคดีใหม่ประจำหน้านั้นๆ
-        }
-
-        // ฟังก์ชัน: คำนวณจำนวนคดีตามสถานะต่างๆ มาโชว์บน Dashboard
-        async function fetchMetrics() {
-            const container = document.getElementById('metricsContainer');
-            if (!container) return;
-
-            try {
-                // ดึงข้อมูลคอลัมน์ case_status ทั้งหมดจากตาราง cases มาประมวลผล
-                const { data: cases, error } = await supabaseClient
-                    .from('cases')
-                    .select('case_status');
-
-                if (error) throw error;
-
-                // 1. ตั้งต้นตัวนับสถิติเป็น 0
-                let countDraft = 0;
-                let countInProgress = 0;
-                let countAppealing = 0;
-                let countExecution = 0;
-                let countClosed = 0;
-
-                // 2. ลูปนับจำแนกประเภทตามความจริงในฐานข้อมูล
-                if (cases && cases.length > 0) {
-                    cases.forEach(c => {
-                        if (c.case_status === 'Draft') countDraft++;
-                        else if (c.case_status === 'In_Progress') countInProgress++;
-                        else if (c.case_status === 'Appealing') countAppealing++;
-                        else if (c.case_status === 'Execution') countExecution++;
-                        else if (c.case_status === 'Closed') countClosed++;
-                    });
-                }
-
-                const totalCases = countDraft + countInProgress + countAppealing + countExecution + countClosed;
-
-                // 3. พ่นโครงสร้าง HTML แถบสถานะคดีพร้อมจำนวนที่ถูกต้องลงหน้าจอ
-                container.innerHTML = `
-                    <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                        <span class="text-xs font-semibold text-slate-600">📁 คดีความทั้งหมดในระบบ</span>
-                        <b class="text-slate-900 text-sm bg-white border border-slate-200 px-2.5 py-0.5 rounded-full">${totalCases} คดี</b>
-                    </div>
-
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-xs font-medium">
-                            <span class="text-slate-500">📝 Draft (ร่างคำฟ้อง)</span>
-                            <span class="text-slate-700">${countDraft} คดี</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="bg-amber-400 h-full rounded-full" style="width: ${totalCases > 0 ? (countDraft / totalCases) * 100 : 0}%"></div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-xs font-medium">
-                            <span class="text-slate-500">⚖️ In Progress (พิจารณาคดี)</span>
-                            <span class="text-slate-700">${countInProgress} คดี</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="bg-blue-500 h-full rounded-full" style="width: ${totalCases > 0 ? (countInProgress / totalCases) * 100 : 0}%"></div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-xs font-medium">
-                            <span class="text-slate-500">🏛️ Appealing (ชั้นอุทธรณ์/ฎีกา)</span>
-                            <span class="text-slate-700">${countAppealing} คดี</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="bg-purple-500 h-full rounded-full" style="width: ${totalCases > 0 ? (countAppealing / totalCases) * 100 : 0}%"></div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-xs font-medium">
-                            <span class="text-slate-500">📝 Execution (บังคับคดี)</span>
-                            <span class="text-slate-700">${countExecution} คดี</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="bg-amber-300 h-full rounded-full" style="width: ${totalCases > 0 ? (countExecution / totalCases) * 100 : 0}%"></div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-xs font-medium">
-                            <span class="text-slate-500">✅ Closed (ปิดคดีแล้ว)</span>
-                            <span class="text-slate-700">${countClosed} คดี</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="bg-emerald-500 h-full rounded-full" style="width: ${totalCases > 0 ? (countClosed / totalCases) * 100 : 0}%"></div>
-                        </div>
-                    </div>
-                `;
-
-            } catch (err) {
-                console.error("คำนวณสถิติผิดพลาด:", err.message);
-                container.innerHTML = `<p class="text-center text-red-500 text-xs py-2">❌ ไม่สามารถคำนวณสถิติได้</p>`;
-            }
-        }
-
-        // ฟังก์ชัน: ดึงกำหนดวันนัดหมายมาโชว์ในกล่อง Dashboard (แสดง วัน-เวลา, เลขคดีดำแดง, ชื่อศาล, ประเภทนัด)
-        async function fetchSchedules() {
-            try {
-                // ดึงวันที่และเวลา ณ ปัจจุบันในรูปแบบที่ฐานข้อมูลเข้าใจ (ISO String)
-                const todayIso = new Date().toISOString();
-                // 🔍 เชื่อมตารางดึงข้อมูลคดี (cases) พ่วงมาด้วยเพื่อเอาเลขคดีและชื่อศาล
-                const { data: schedules, error } = await supabaseClient
-                    .from('schedules')
-                    .select(`
-                        event_date, 
-                        event_type, 
-                        case_id,
-                        cases (
-                            black_number,
-                            red_number,
-                            court_name
-                        )
-                    `)
-                    .gte('event_date', todayIso) // 👈 ➕ กรองเอาเฉพาะที่ "วันนัด >= วันนี้" เท่านั้น นัดที่ผ่านไปแล้วจะไม่หลุดมา
-                    .eq('is_completed', false)
-                    .order('event_date', { ascending: true })
-                    .limit(5);
-
-                if (error) throw error;
-
-                const deadlineBody = document.getElementById('deadlineTableBody');
-                deadlineBody.innerHTML = '';
-
-                // ปรับตัวเลข colspan เป็น 4 ตามจำนวนคอลัมน์ใหม่นะครับคุณทนาย
-                if (!schedules || schedules.length === 0) {
-                    deadlineBody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-400">🎉 สัปดาห์นี้ไม่มีนัดหมายเร่งด่วน</td></tr>`;
-                    return;
-                }
-
-                schedules.forEach(s => {
-                    // 1. จัดฟอร์แมต วันที่ และ เวลา เป็นภาษาไทย (ปี พ.ศ.)
-                    const d = new Date(s.event_date);
-                    const formattedDate = d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' });
-                    const formattedTime = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
-                    
-                    // 2. ดึงค่าจากตารางคดีที่เชื่อมโยงมา (ป้องกันกรณีข้อมูลคดีต้นทางถูกลบ)
-                    const caseInfo = s.cases || {};
-                    const blackNum = caseInfo.black_number ? `ดำ: ${caseInfo.black_number}` : '—';
-                    const redNum = caseInfo.red_number ? ` <span class="text-red-500">แดง: ${caseInfo.red_number}</span>` : '';
-                    const courtName = caseInfo.court_name || '—';
-
-                    deadlineBody.innerHTML += `
-                        <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors text-xs sm:text-sm">
-                            <td class="py-3 font-mono text-slate-700">
-                                <div>${formattedDate}</div>
-                                <div class="text-xs text-blue-600 font-semibold">${formattedTime}</div>
-                            </td>
-                            <td class="py-3 font-medium text-slate-900">
-                                <div>${blackNum}</div>
-                                <div class="text-xs font-normal">${redNum}</div>
-                            </td>
-                            <td class="py-3 text-slate-600 font-medium max-w-[150px] truncate" title="${courtName}">${courtName}</td>
-                            <td class="py-3 text-slate-800 font-semibold">${s.event_type}</td>
-                        </tr>
-                    `;
-                });
-            } catch (err) {
-                console.error("โหลดปฏิทินนัดไม่สำเร็จ:", err.message);
-                const deadlineBody = document.getElementById('deadlineTableBody');
-                if (deadlineBody) {
-                    deadlineBody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-red-500">❌ เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
-                }
-            }
-        }
-
-        // ฟังก์ชัน: กดปุ่มบันทึกเพื่อยิงข้อมูลคดีใหม่ตรงเข้า Supabase
-        // ฟังก์ชัน: กดปุ่มบันทึกเพื่อยิงข้อมูลคดีใหม่ และ บันทึกวันนัดลงตารางปฏิทินพร้อมกัน
-        async function saveCase(e) {
-            e.preventDefault();
-            
-            // ดึงค่าข้อมูลคดี
-            const black_number = document.getElementById('black_number').value;
-            const red_number = document.getElementById('red_number').value || null;
-            const court_name = document.getElementById('court_name').value;
-            const case_type = document.getElementById('case_type').value;
-            const claim_amount = parseFloat(document.getElementById('claim_amount').value) || 0;
-            const description = document.getElementById('description').value;
-            const plaintiff_name = document.getElementById('plaintiff_name').value;
-            const defendant_name = document.getElementById('defendant_name').value;
-            const client_role = document.getElementById('client_role').value;
-
-            // ดึงค่าข้อมูลวันนัดหมายที่เพิ่มเข้ามาใหม่
-            const event_date = document.getElementById('event_date').value;
-            const event_type = document.getElementById('event_type').value;
-
-            try {
-                // ขั้นตอนที่ 1: บันทึกข้อมูลเข้าตารางคดี (cases) และสั่งให้ส่งข้อมูลคดีที่พึ่งบันทึกสำเร็จกลับมาตัวแปร เพื่อเอารหัสรหัสคดี (case_id)
-                const { data: newCase, error: caseError } = await supabaseClient
-                    .from('cases')
-                    .insert([{ 
-                                black_number: black_number, 
-                                red_number: red_number, 
-                                court_name: court_name, 
-                                case_type: case_type, 
-                                claim_amount: claim_amount, 
-                                description: description, 
-                                case_status: 'Draft', 
-    
-                                // ⚠️ ลองเขียนแยกฝั่งซ้าย-ขวาแบบนี้ดูครับ
-                                plaintiff_name: plaintiff_name,  
-                                defendant_name: defendant_name,  
-                                client_role: client_role 
-                            }])
-                    .select(); // ดึงข้อมูลแถวที่เพิ่มลงฐานข้อมูลกลับมาทันที
-
-                if (caseError) throw caseError;
-
-                // เมื่อได้ข้อมูลคดีกลับมาแล้ว ดึงเอา รหัสรหัสคดี (เช่น CASE-2026xxxx-xxxx) ไปใส่ในตารางนัดหมาย
-                if (newCase && newCase.length > 0) {
-                    const assignedCaseId = newCase[0].case_id;
-
-                    // ขั้นตอนที่ 2: บันทึกวันนัดลงตารางปฏิทิน (schedules) โดยผูกรหัสคดีไว้
-                    const { error: scheduleError } = await supabaseClient
-                        .from('schedules')
-                        .insert([{ 
-                            case_id: assignedCaseId, 
-                            event_date: new Date(event_date).toISOString(), // แปลงเวลาให้เป็นมาตรฐานสากล
-                            event_type: event_type, 
-                            remind_days: 7 
-                        }]);
-
-                    if (scheduleError) throw scheduleError;
-                }
-
-                alert("🎉 บันทึกคดีความและลงปฏิทินวันนัดหมายสำเร็จ!");
-                toggleModal(false);
-                fetchCases();      // รีโหลดตารางรายการคดีความ
-                fetchSchedules();  // รีโหลดตารางปฏิทินแจ้งเตือนหน้าแรกด่วนทันที
-                fetchMetrics(); // ➕ สั่งรันคำนวณสถิติเปิดหน้าแรก
-
-            } catch (err) {
-                alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err.message);
-            }
-        }
-    // ฟังก์ชัน: ควบคุมการเปิด-ปิดหน้าต่างลงนัดหมายเพิ่ม
-        function toggleScheduleModal(show) {
-            const modal = document.getElementById('scheduleModal');
-            if (show) {
-                modal.classList.remove('hidden');
-                loadAllCasesToDropdown(); // โหลดรายชื่อคดีเข้ากล่องเลือกทันทีที่เปิดหน้าต่าง
-            } else {
-                modal.classList.add('hidden');
-                document.getElementById('scheduleForm').reset();
-            }
-        }
-
-        // เริ่มต้นส่วนฟังก์ชันการปรับสถานะคดี
-        // 🔄 ฟังก์ชันเปิด/ปิดหน้าต่างสถานะ และโหลดข้อมูลคดีมาตุนเตรียมพร้อมค้นหา
-        // 🔄 1. ฟังก์ชันเปิด/ปิดหน้าต่างสถานะ และโหลดข้อมูลคดีมาตุนเตรียมพร้อมค้นหา (เพิ่มการดึงคอลัมน์ชื่อคู่ความ/ข้อหา)
-        async function toggleStatusModal(show) {
-            const modal = document.getElementById('statusModal');
-            const dropdownList = document.getElementById('statusCaseDropdownList');
-            
-            if (show) {
-                modal.classList.remove('hidden');
-                document.getElementById('status_case_search').value = '';
-                document.getElementById('status_case_id').value = '';
-                dropdownList.innerHTML = '<div class="p-3 text-center text-slate-400 text-xs">⏳ กำลังเตรียมฐานข้อมูลคดีความ...</div>';
-                dropdownList.classList.remove('hidden');
-
-                try {
-                    // ➕ ดึงคอลัมน์เพิ่ม: plaintiff_name, defendant_name, description
-                    const { data: cases, error } = await supabaseClient
-                        .from('cases')
-                        .select('case_id, black_number, court_name, case_status, plaintiff_name, defendant_name, description')
-                        .order('created_at', { ascending: false });
-                    
-                    if (!error && cases) {
-                        allCasesForStatusUpdate = cases;
-                        renderStatusCaseList(cases);
-                    }
-                } catch(e) { 
-                    console.error("โหลดข้อมูลคดีเข้าตัวเลือกค้นหาล้มเหลว:", e); 
-                }
-            } else {
-                modal.classList.add('hidden');
-                dropdownList.classList.add('hidden');
-                document.getElementById('statusForm').reset();
-            }
-        }
-
-        // 🧠 2. ฟังก์ชันย่อยสำหรับวาด/พ่นรายการคดีหล่นลงมาใต้กล่องค้นหา (เพิ่มรายละเอียด โจทก์-จำเลย-ข้อหา ให้เห็นตอนผลลัพธ์ดรอปดาวน์)
-        function renderStatusCaseList(list) {
-            const dropdownList = document.getElementById('statusCaseDropdownList');
-            if (list.length === 0) {
-                dropdownList.innerHTML = '<div class="p-3 text-center text-red-400 text-xs">❌ ไม่พบคดีความที่ตรงกับคำค้นหา</div>';
-                return;
-            }
-            
-            dropdownList.innerHTML = '';
-            list.forEach(c => {
-                // ตัวแปรเก็บข้อความสถานะภาษาไทยสำหรับโชว์ประกอบให้ดูง่าย
-                let statusTh = 'ร่างฟ้อง';
-                if(c.case_status === 'In_Progress') statusTh = 'อยู่ระหว่างพิจารณาคดี';
-                if(c.case_status === 'Appealing') statusTh = 'อุทธรณ์/ฎีกา';
-                if(c.case_status === 'Execution') statusTh = 'บังคับคดี';
-                if(c.case_status === 'Closed') statusTh = 'ปิดคดี';
-
-                dropdownList.innerHTML += `
-                    <div onclick="selectCaseForStatusUpdate('${c.case_id}', '${c.black_number}', '${c.court_name}', '${c.case_status}')" 
-                         class="px-4 py-3 hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-slate-100 flex flex-col gap-0.5 text-slate-700 font-medium transition-colors">
-                        <div class="flex justify-between items-center w-full">
-                            <div>
-                                <span class="text-blue-600 font-bold">ดำ: ${c.black_number}</span> 
-                                <span class="text-xs text-slate-400 ml-1.5 font-normal">(${c.court_name})</span>
-                            </div>
-                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-normal">${statusTh}</span>
-                        </div>
-                        <!-- ➕ แสดงรายชื่อคู่ความย่อเพื่อให้ตัดสินใจเลือกได้ง่ายขึ้น -->
-                        <div class="text-[11px] text-slate-500 font-normal truncate">
-                            👤 โจทก์: ${c.plaintiff_name || 'ไม่ระบุ'} v จำเลย: ${c.defendant_name || 'ไม่ระบุ'}
-                        </div>
-                        ${c.description ? `<div class="text-[11px] text-slate-400 font-normal italic truncate">💼 ข้อหา: ${c.description}</div>` : ''}
-                    </div>
-                `;
-            });
-        }
-
-        // 🔍 3. ฟังก์ชันกรองรายชื่อคดีแบบครอบจักรวาล (คดีดำ / ศาล / โจทก์ / จำเลย / ข้อหา / สถานะ)
-        function filterStatusCaseDropdown() {
-            const searchVal = document.getElementById('status_case_search').value.toLowerCase().trim();
-            const dropdownList = document.getElementById('statusCaseDropdownList');
-            
-            dropdownList.classList.remove('hidden');
-            
-            const filtered = allCasesForStatusUpdate.filter(c => {
-                // แปลงสถานะภาษาอังกฤษให้รองรับคำค้นหาภาษาไทย
-                let statusTh = '';
-                if(c.case_status === 'Draft') statusTh = 'ร่างฟ้อง ร่างคำฟ้อง ร่างคำร้อง draft';
-                else if(c.case_status === 'In_Progress') statusTh = 'อยู่ระหว่างพิจารณาคดี สืบพยาน พิจารณา progress';
-                else if(c.case_status === 'Appealing') statusTh = 'อุทธรณ์ ฎีกา appealing';
-                else if(c.case_status === 'Execution') statusTh = 'บังคับคดี execution';
-                else if(c.case_status === 'Closed') statusTh = 'ปิดคดี ปิดสำนวนถาวร closed';
-
-                // ตรวจเช็กคำค้นหาว่าตรงกับข้อมูลส่วนไหนในคดีบ้าง
-                return (c.black_number && c.black_number.toLowerCase().includes(searchVal)) || 
-                       (c.court_name && c.court_name.toLowerCase().includes(searchVal)) ||
-                       (c.plaintiff_name && c.plaintiff_name.toLowerCase().includes(searchVal)) ||
-                       (c.defendant_name && c.defendant_name.toLowerCase().includes(searchVal)) ||
-                       (c.description && c.description.toLowerCase().includes(searchVal)) ||
-                       (statusTh.includes(searchVal));
-            });
-            
-            renderStatusCaseList(filtered);
-        }
-
-        // 📌 ฟังก์ชันเมื่อทำการคลิกเลือกคดีใดคดีหนึ่งจากรายการค้นหา
-        function selectCaseForStatusUpdate(id, black, court, currentStatus) {
-            document.getElementById('status_case_id').value = id; // ล็อกไอดีจริงส่งลงช่อง Hidden สำหรับส่งให้ Supabase
-            document.getElementById('status_case_search').value = `คดีดำ: ${black} (${court})`; // หยอดข้อความบอกคุณทนายว่าเลือกคดีไหนอยู่
-            document.getElementById('new_case_status').value = currentStatus; // ขยับตัวเลือกสถานะใหม่ให้ตรงตามปัจจุบันของคดีนั้นทันทีกันคุณทนายสับสน
-            document.getElementById('statusCaseDropdownList').classList.add('hidden'); // ซ่อนหุบรายการหล่นตัวเลือกไป
-        }
-
-        // 🔄 ฟังก์ชันกดยิงส่งอัปเดตสถานะคดีหลักเข้าตารางคดี
-        async function updateCaseStatus(e) {
-            e.preventDefault();
-            const case_id = document.getElementById('status_case_id').value;
-            const new_status = document.getElementById('new_case_status').value;
-
-            if (!case_id) { 
-                alert("⚠️ โปรดพิมพ์ค้นหาและคลิกเลือกคดีที่ต้องการอัปเดตสถานะก่อนครับ"); 
-                return; 
-            }
-
-            try {
-                const { error } = await supabaseClient
-                    .from('cases')
-                    .update({ case_status: new_status })
-                    .eq('case_id', case_id);
-
-                if (error) throw error;
-
-                alert("🔄 ปรับปรุงและอัปเดตสถานะคดีความสำเร็จเรียบร้อยครับ!");
-                toggleStatusModal(false);
-                
-                // สั่งรีโหลดตารางคดีใหญ่ และแดชบอร์ดสถิติให้ปรับตัวเลขตามทันที
-                if (typeof fetchCases === 'function') fetchCases(); 
-                if (typeof fetchMetrics === 'function') fetchMetrics();
-
-            } catch (err) {
-                alert("❌ เกิดข้อผิดพลาดในการปรับสถานะ: " + err.message);
-            }
-        }
-        // สิ้นสุดโค้ดการอัปเดตสถานะคดี
-
-        // 🧠 ระบบกรองคดีความอัจฉริยะ (คดีที่มีนัดวันนี้ หรือ กรองตามประเภทนัด)
-        async function filterCasesForSchedule(filterMode) {
-            try {
-                let caseIds = [];
-
-                if (filterMode === 'today') {
-                    // 1. ดึงวันนัดที่มีผลตรงกับวันนี้
-                    const todayStr = new Date().toISOString().split('T')[0]; // ดึงเฉพาะปี-เดือน-วัน
-                    const { data: todaySchedules } = await supabaseClient
-                        .from('schedules')
-                        .select('case_id')
-                        .gte('event_date', `${todayStr}T00:00:00Z`)
-                        .lte('event_date', `${todayStr}T23:59:59Z`);
-                    
-                    if (todaySchedules) caseIds = todaySchedules.map(s => s.case_id);
-
-                } else if (filterMode === 'type') {
-                    // 2. ดึงคดีโดยกรองจากคำสำคัญของประเภทนัดหมาย
-                    const typeKeyword = document.getElementById('filterByScheduleType').value;
-                    if (typeKeyword.trim() === "") return;
-
-                    const { data: typeSchedules } = await supabaseClient
-                        .from('schedules')
-                        .select('case_id')
-                        .ilike('event_type', `%${typeKeyword}%`);
-                    
-                    if (typeSchedules) caseIds = typeSchedules.map(s => s.case_id);
-                }
-
-                // สกัดรหัสคดีไม่ให้ซ้ำกัน (Unique IDs)
-                const uniqueCaseIds = [...new Set(caseIds)];
-
-                if (uniqueCaseIds.length === 0) {
-                    document.getElementById('schedule_case_id').innerHTML = '<option value="">❌ ไม่พบคดีความที่ตรงกับเงื่อนไขนัดหมาย</option>';
-                    return;
-                }
-
-                // นำไอดีที่กรองได้ ไปดึงรายละเอียดชื่อศาลและเลขคดีดำมาแสดงใน Dropdown
-                const { data: filteredCases } = await supabaseClient
-                    .from('cases')
-                    .select('case_id, black_number, court_name')
-                    .in('case_id', uniqueCaseIds);
-
-                loadAllCasesToDropdown(filteredCases);
-
-            } catch (err) {
-                console.error("ระบบกรองนัดผิดพลาด:", err.message);
-            }
-        }
-
-        // ฟังก์ชัน: บันทึกวันนัดหมายครั้งต่อไป (ลงตาราง schedules เพิ่มเติม)
-        async function saveAdditionalSchedule(e) {
-            e.preventDefault();
-            const case_id = document.getElementById('schedule_case_id').value;
-            const event_date = document.getElementById('add_event_date').value;
-            const event_type = document.getElementById('add_event_type').value;
-            const notes = document.getElementById('add_event_notes').value;
-
-            if(!case_id) { alert("โปรดเลือกคดีความก่อนทำการบันทึก"); return; }
-
-            try {
-                const { error } = await supabaseClient.from('schedules').insert([
-                    { case_id, event_date: new Date(event_date).toISOString(), event_type, notes, is_completed: false }
-                ]);
-
-                if (error) throw error;
-
-                alert("🎉 บันทึกวันนัดหมายครั้งต่อไปเรียบร้อยแล้ว!");
-                toggleScheduleModal(false);
-                fetchSchedules(); // รีเฟรชแดชบอร์ดแสดงผลวันนัดด่วนด้านบนทันที
-
-            } catch (err) {
-                alert("❌ เกิดข้อผิดพลาดในการลงนัดเพิ่ม: " + err.message);
-            }
-        }
-
-        
-    // ฟังก์ชัน: ควบคุมการเปิด-ปิด หน้าต่างแก้ไขคดี
-        function toggleEditModal(show) {
-            const modal = document.getElementById('editCaseModal');
-            if (show) {
-                modal.classList.remove('hidden');
-            } else {
-                modal.classList.add('hidden');
-                document.getElementById('editCaseForm').reset();
-            }
-        }
-        // ฟังก์ชันควบคุมเปิด-ปิด หน้าต่างรายละเอียด
-        function toggleViewModal(show) {
-            const modal = document.getElementById('viewDetailsModal');
-            if (show) modal.classList.remove('hidden');
-            else modal.classList.add('hidden');
-            
-        }
-
-        // ฟังก์ชันสั่งกางข้อมูลเพื่อแสดงรายละเอียดคู่ความเมื่อกดปุ่ม "เปิดดู"
-        // ฟังก์ชันสั่งกางข้อมูลเพื่อแสดงรายละเอียดคู่ความเมื่อกดปุ่ม "เปิดดู"
-        function openViewModal(id, black, red, court, plaintiff, defendant, role, desc) {
-            document.getElementById('view_title_id').innerText = "📊 รายละเอียดเชิงลึกคดี: " + id;
-            document.getElementById('view_title_court').innerText = "🏛️ สังกัดศาล: " + court;
-            document.getElementById('view_black_num').innerText = black;
-            document.getElementById('view_red_num').innerText = red;
-            document.getElementById('view_plaintiff').innerText = plaintiff;
-            document.getElementById('view_defendant').innerText = defendant;
-            document.getElementById('view_client_role').innerText = role;
-            document.getElementById('view_desc').innerText = desc;
-            
-            toggleViewModal(true);
-            
-            // 🛠️ แก้ไขจุดนี้: เปลี่ยนจาก case_id เป็น id ตามชื่อตัวแปรที่รับเข้ามาในวงเล็บด้านบนครับ
-            fetchCaseParticipants(id);
-            
-            // ล็อกรหัสคดีปัจจุบันฝากไว้ในตัวแปรส่วนกลางเพื่อส่งต่อไปยังหน้าคอนแทค
-            currentViewingCaseId = id;
-            document.getElementById('view_case_id_hidden').value = id;
-        }
-
-        // ฟังก์ชัน: เมื่อกดปุ่มแก้ไขในแถว ให้ดึงข้อมูลเก่านั้นมากางในช่องฟอร์มทันที
-        // ฟังก์ชัน: เมื่อกดปุ่มแก้ไข ให้ดึงข้อมูลเก่ารวมถึงวันนัดเดิมมากางบนหน้าต่างแก้ไข
-        async function openEditModal(case_id, black, red, court, type, amount, desc, plaintiff, defendant, role) {
-            document.getElementById('edit_case_id').value = case_id;
-            document.getElementById('edit_black_number').value = black;
-            document.getElementById('edit_red_number').value = red === 'null' ? '' : red;
-            document.getElementById('edit_court_name').value = court;
-            document.getElementById('edit_case_type').value = type;
-            document.getElementById('edit_claim_amount').value = amount;
-            document.getElementById('edit_description').value = desc;
-            document.getElementById('edit_plaintiff_name').value = plaintiff;
-            document.getElementById('edit_defendant_name').value = defendant;
-            document.getElementById('edit_client_role').value = role;
-
-            // 🔍 ดึงวันนัดหมายนัดแรกสุดที่ผูกกับคดีนี้จากตาราง schedules เพื่อนำมาแสดงผลในช่องแก้ไข
-            try {
-                const { data: scheduleData, error } = await supabaseClient
-                    .from('schedules')
-                    .select('event_date, event_type')
-                    .eq('case_id', case_id)
-                    .order('created_at', { ascending: true }) // นำนัดแรกสุดขึ้นมาแก้
-                    .limit(1);
-
-                if (!error && scheduleData && scheduleData.length > 0) {
-                    // แปลงเวลา ISO จากฐานข้อมูลให้เข้ากับรูปแบบของ input datetime-local (YYYY-MM-DDTHH:MM)
-                    const dbDate = new Date(scheduleData[0].event_date);
-                    
-                    // ปรับเวลาให้ตรงกับ Local Timezone ของเครื่องเพื่อไม่ให้เวลาเพี้ยนตอนกางข้อมูล
-                    const tzOffset = dbDate.getTimezoneOffset() * 60000;
-                    const localISOTime = (new Date(dbDate.getTime() - tzOffset)).toISOString().slice(0, 16);
-                    
-                    document.getElementById('edit_event_date').value = localISOTime;
-                    document.getElementById('edit_event_type').value = scheduleData[0].event_type;
-                } else {
-                    document.getElementById('edit_event_date').value = '';
-                    document.getElementById('edit_event_type').value = '';
-                }
-            } catch (err) {
-                console.error("ไม่สามารถดึงข้อมูลวันนัดเดิมได้:", err.message);
-            }
-
-            toggleEditModal(true);
-        }
-
-        // ฟังก์ชัน: ส่งคำสั่งแก้ไขอัปเดตข้อมูลทับลงตาราง cases บน Supabase
-        // ฟังก์ชัน: บันทึกข้อมูลแก้ไขคดีและวันนัดพร้อมกัน
-        // ฟังก์ชัน: บันทึกข้อมูลแก้ไขคดีและวันนัดพร้อมกัน (เวอร์ชันแก้ไขเรื่องโซนเวลาไม่ยอมบันทึก)
-        async function updateCaseDetails(e) {
-            e.preventDefault();
-            
-            // 1. ดึงค่าจากฟอร์มแก้ไขคดีหลัก
-            const case_id = document.getElementById('edit_case_id').value;
-            const black_number = document.getElementById('edit_black_number').value;
-            const red_number = document.getElementById('edit_red_number').value || null;
-            const court_name = document.getElementById('edit_court_name').value;
-            const case_type = document.getElementById('edit_case_type').value;
-            const claim_amount = parseFloat(document.getElementById('edit_claim_amount').value) || 0;
-            const description = document.getElementById('edit_description').value;
-            const plaintiff_name = document.getElementById('edit_plaintiff_name').value;
-            const defendant_name = document.getElementById('edit_defendant_name').value;
-            const client_role = document.getElementById('edit_client_role').value;
-
-            // 2. ดึงค่าวันนัดหมายและประเภทนัดฝั่งแก้ไข
-            const event_date_raw = document.getElementById('edit_event_date').value;
-            const event_type = document.getElementById('edit_event_type').value;
-
-            try {
-                // --- จุดจัดการเรื่องเวลาขจัดบั๊กไม่ยอมอัปเดต ---
-                let formattedISOData = null;
-                if (event_date_raw) {
-                    const parsedDate = new Date(event_date_raw);
-                    // เช็กว่าแปลงวันที่ได้สำเร็จหรือไม่ ป้องกันข้อผิดพลาด Invalid Date
-                    if (!isNaN(parsedDate.getTime())) {
-                        formattedISOData = parsedDate.toISOString();
-                    }
-                }
-
-                if (!formattedISOData) {
-                    alert("⚠️ รูปแบบวันและเวลานัดหมายไม่ถูกต้อง โปรดตรวจสอบอีกครั้ง");
-                    return;
-                }
-                // ----------------------------------------
-
-                // ขั้นตอนที่ 1: สั่งอัปเดตข้อมูลตารางคดีหลัก (cases)
-                const { error: caseUpdateError } = await supabaseClient
-                    .from('cases')
-                    .update({ black_number, red_number, court_name, case_type, claim_amount, description, plaintiff_name, defendant_name, client_role })
-                    .eq('case_id', case_id);
-
-                if (caseUpdateError) throw caseUpdateError;
-
-                // ขั้นตอนที่ 2: ค้นหานัดหมายแรกสุดที่ผูกกับคดีนี้ในตารางปฏิทิน (schedules) เพื่ออัปเดตตาม
-                const { data: firstSchedule, error: findError } = await supabaseClient
-                    .from('schedules')
-                    .select('event_id')
-                    .eq('case_id', case_id)
-                    .order('created_at', { ascending: true })
-                    .limit(1);
-
-                if (findError) throw findError;
-
-                // ถ้าเจอนัดหมายเดิม ให้ทำการ UPDATE ทับ
-                if (firstSchedule && firstSchedule.length > 0) {
-                    const { error: scheduleUpdateError } = await supabaseClient
-                        .from('schedules')
-                        .update({
-                            event_date: formattedISOData, // ส่งค่า ISO ที่จัดการเรื่องบราวเซอร์เอ๋อแล้วเข้าไป
-                            event_type: event_type
-                        })
-                        .eq('event_id', firstSchedule[0].event_id);
-
-                    if (scheduleUpdateError) throw scheduleUpdateError;
-                } else {
-                    // 💡 แอบแถมกรณีเผื่อคดีนั้น "ไม่เคยลงนัดหมายไว้เลย" ให้สร้าง (Insert) นัดใหม่ขึ้นมาให้เลยเพื่อไม่ให้ข้อมูลหลุดหาย
-                    const { error: scheduleInsertError } = await supabaseClient
-                        .from('schedules')
-                        .insert([{
-                            case_id: case_id,
-                            event_date: formattedISOData,
-                            event_type: event_type,
-                            remind_days: 7
-                        }]);
-                    
-                    if (scheduleInsertError) throw scheduleInsertError;
-                }
-
-                alert("🎉 แก้ไขข้อมูลคดีความและกำหนดนัดหมายเรียบร้อยแล้ว!");
-                toggleEditModal(false);
-                fetchCases();      // รีโหลดตารางรายการคดีความทั้งหมดใหม่
-                fetchSchedules();  // รีโหลดตารางปฏิทินเตือนภัยด้านบนสุด
-                fetchMetrics(); // ➕ สั่งรันคำนวณสถิติเปิดหน้าแรก
-
-            } catch (err) {
-                alert("❌ เกิดข้อผิดพลาดในการแก้ไขข้อมูล: " + err.message);
-                console.error("Update Error Logs:", err);
-            }
-        }
-        // 🔄 1. ฟังก์ชันสลับหน้าจอระหว่าง หน้าคดีความ กับ หน้าสมุดรายชื่อ
-        function switchPage(page) {
-            const casesPage = document.getElementById('dashboardPage') || document.getElementById('casesPage'); // เช็กชื่อ Id หน้าแรกของคุณทนาย
-            const contactsPage = document.getElementById('contactsPage');
-            const menuCases = document.getElementById('menuCases');
-            const menuContacts = document.getElementById('menuContacts');
-
-            if (page === 'contacts') {
-                if(casesPage) casesPage.classList.add('hidden');
-                contactsPage.classList.remove('hidden');
-                // สลับสีปุ่มเมนูสไตล์ Tailwind
-                menuContacts.className = "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-700";
-                menuCases.className = "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900";
-                fetchContacts(); // โหลดข้อมูลเมื่อเปิดหน้านี้
-            } else {
-                contactsPage.classList.add('hidden');
-                if(casesPage) casesPage.classList.remove('hidden');
-                menuCases.className = "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-700";
-                menuContacts.className = "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900";
-            }
-        }
-
-        // 👁️ 2. ควบคุมการเปิด/ปิดหน้าต่าง Pop-up ของรายชื่อ
-        function toggleContactModal(show) {
-            const modal = document.getElementById('contactModal');
-            if (show) {
-                modal.classList.remove('hidden');
-            } else {
-                modal.classList.add('hidden');
-                document.getElementById('contactForm').reset();
-                document.getElementById('contactId').value = '';
-                document.getElementById('contactModalTitle').innerText = 'เพิ่มผู้ติดต่อใหม่';
-            }
-        }
-
-       
-        // 📥 1. ดึงรายชื่อผู้ติดต่อ โดยเชื่อมเอาเลขคดีมาโชว์ด้วยเพื่อให้รู้ว่าเป็นคู่ความของคดีไหน
-        async function fetchContacts() {
-            const tbody = document.getElementById('contactTableBody');
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-400">⏳ กำลังดึงรายชื่อคู่ความ...</td></tr>`;
-
-            try {
-                // ดึงข้อมูลเชื่อมตาราง cases เพื่อเอาเลขคดีดำมาแสดงคู่กัน
-                const { data: contacts, error } = await supabaseClient
-                    .from('contacts')
-                    .select(`
-                        contact_id,
-                        case_id,
-                        full_name,
-                        role,
-                        citizen_id,
-                        contact_info,
-                        cases (black_number)
-                    `)
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                if (!contacts || contacts.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">📭 ยังไม่มีข้อมูลรายชื่อคู่ความในระบบ</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = '';
-                contacts.forEach(c => {
-                    const caseInfo = c.cases || {};
-                    const blackNum = caseInfo.black_number ? `คดีดำ: ${caseInfo.black_number}` : 'ทั่วไป (ไม่ผูกคดี)';
-
-                    // 🔄 จุดสำคัญ: แปลงค่าอังกฤษจากฐานข้อมูล กลับมาเป็นป้ายภาษาไทยสวย ๆ บนหน้าจอ
-                    let typeBadge = '';
-                    if (c.role === 'Plaintiff') typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 rounded-full">โจทก์</span>';
-                    else if (c.role === 'Defendant') typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold bg-red-50 text-red-700 rounded-full">จำเลย</span>';
-                    else if (c.role === 'Petitioner') typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold bg-purple-50 text-purple-700 rounded-full">ผู้ร้อง</span>';
-                    else if (c.role === 'Objector') typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700 rounded-full">ผู้คัดค้าน</span>';
-                    else if (c.role === 'Witness') typeBadge = '<span class="px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded-full">พยาน</span>';
-                    else typeBadge = `<span class="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-full">${c.role || 'คู่ความ'}</span>`;
-
-                    tbody.innerHTML += `
-                        <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-                            <td class="px-6 py-3.5 font-semibold text-slate-900">
-                                <div>${c.full_name}</div>
-                                <div class="text-xs text-slate-400 font-normal">เลขบัตร: ${c.citizen_id || '—'}</div>
-                            </td>
-                            <td class="px-6 py-3.5">
-                                ${typeBadge}
-                            </td>
-                            <td class="px-6 py-3.5 font-medium text-slate-600">${blackNum}</td>
-                            <td class="px-6 py-3.5 text-slate-700 text-xs max-w-xs truncate" title="${c.contact_info || ''}">${c.contact_info || '—'}</td>
-                            <td class="px-6 py-3.5 text-center">
-                                <button onclick="editContact(${JSON.stringify(c).replace(/"/g, '&quot;')})" class="text-blue-600 hover:text-blue-800 font-medium">แก้ไข</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } catch (err) {
-                console.error("โหลดรายชื่อไม่สำเร็จ:", err.message);
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">❌ เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
-            }
-        }
-        // 💾 2. บันทึกข้อมูลเข้าตาราง contacts (อิงตามชื่อคอลัมน์จริง)
-        async function saveContact(event) {
-            event.preventDefault();
-            
-            const contact_id = document.getElementById('contact_id').value;
-            const contactData = {
-                case_id: document.getElementById('contact_case_id').value || null, // ผูกรหัสคดี (ถ้ามี)
-                full_name: document.getElementById('cFullName').value.trim(),
-                role: document.getElementById('cRole').value,
-                citizen_id: document.getElementById('cCitizenId').value.trim() || null,
-                contact_info: document.getElementById('cContactInfo').value.trim() || null
-            };
-
-            try {
-                let error;
-                if (contact_id) {
-                    // แก้ไขข้อมูลเดิมโดยอิงตาม Primary Key ชื่อ contact_id
-                    ({ error } = await supabaseClient.from('contacts').update(contactData).eq('contact_id', contact_id));
-                } else {
-                    // เพิ่มรายชื่อคู่ความใหม่
-                    ({ error } = await supabaseClient.from('contacts').insert([contactData]));
-                }
-
-                if (error) throw error;
-
-                alert("🎉 บันทึกข้อมูลคู่ความเรียบร้อย!");
-                toggleContactModal(false);
-                fetchContacts(); // รีโหลดตารางรายชื่อ
-            } catch (err) {
-                alert("❌ ไม่สามารถบันทึกข้อมูลได้: " + err.message);
-            }
-            // ใส่พ่วงไว้ท้ายคำสั่งบันทึกข้อมูลรายชื่อสำเร็จ
-            const currentCaseId = document.getElementById('contact_case_id').value;
-            if (currentCaseId) fetchCaseParticipants(currentCaseId); // อัปเดตตารางเล็กในหน้าต่างคดี
-            fetchContacts(); // อัปเดตตารางสมุดรายชื่อหน้าใหญ่
-        }
-
-        // 📝 3. ฟังก์ชันกางข้อมูลเก่าลงฟอร์มเมื่อกดแก้ไข
-        function editContact(c) {
-            document.getElementById('contact_id').value = c.contact_id;
-            document.getElementById('contact_case_id').value = c.case_id || '';
-            document.getElementById('cFullName').value = c.full_name;
-            document.getElementById('cRole').value = c.role || 'Plaintiff'; // แก้จากเดิมที่เป็น 'โจทก์'
-            document.getElementById('cCitizenId').value = c.citizen_id || '';
-            document.getElementById('cContactInfo').value = c.contact_info || '';
-            
-            document.getElementById('contactModalTitle').innerText = '📝 แก้ไขข้อมูลคู่ความ';
-            document.getElementById('contactModal').classList.remove('hidden');
-        }
-
-        // 👁️ 4. ควบคุมการปิดหน้าต่างป๊อปอัปรายชื่อ
-        function toggleContactModal(show) {
-            const modal = document.getElementById('contactModal');
-            if (show) {
-                modal.classList.remove('hidden');
-            } else {
-                modal.classList.add('hidden');
-                document.getElementById('contactForm').reset();
-                document.getElementById('contact_id').value = '';
-                document.getElementById('contact_case_id').value = '';
-                document.getElementById('contactModalTitle').innerText = 'เพิ่มผู้ติดต่อใหม่';
-            }
-        }
-        // 🔍 1. ฟังก์ชันดึงรายชื่อคู่ความ เฉพาะคดีที่กำลังเปิดดูอยู่มาโชว์ใน Modal รายละเอียดคดี
-        async function fetchCaseParticipants(caseId) {
-            const tbody = document.getElementById('caseParticipantsTableBody');
-            if (!tbody) return;
-            
-            tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-slate-400">⏳ กำลังโหลดรายชื่อคู่ความ...</td></tr>`;
-            
-            try {
-                const { data: participants, error } = await supabaseClient
-                    .from('contacts')
-                    .select('*')
-                    .eq('case_id', caseId)
-                    .order('created_at', { ascending: true });
-                    
-                if (error) throw error;
-                
-                if (!participants || participants.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-slate-400">👥 ยังไม่มีรายชื่อคู่ความผูกกับคดีนี้</td></tr>`;
-                    return;
-                }
-                
-                tbody.innerHTML = '';
-                participants.forEach(p => {
-                    let roleBadge = '';
-                    if (p.role === 'Plaintiff') roleBadge = '<span class="px-1.5 py-0.5 text-[11px] font-medium bg-emerald-50 text-emerald-700 rounded border border-emerald-200">โจทก์</span>';
-                    else if (p.role === 'Defendant') roleBadge = '<span class="px-1.5 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 rounded border border-red-200">จำเลย</span>';
-                    else if (p.role === 'Petitioner') roleBadge = '<span class="px-1.5 py-0.5 text-[11px] font-medium bg-purple-50 text-purple-700 rounded border border-purple-200">ผู้ร้อง</span>';
-                    else if (p.role === 'Objector') roleBadge = '<span class="px-1.5 py-0.5 text-[11px] font-medium bg-amber-50 text-amber-700 rounded border border-amber-200">ผู้คัดค้าน</span>';
-                    else if (p.role === 'Witness') roleBadge = '<span class="px-1.5 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-700 rounded border border-blue-200">พยาน</span>';
-                    else roleBadge = `<span class="px-1.5 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-600 rounded">${p.role || 'คู่ความ'}</span>`;
-                    
-                    tbody.innerHTML += `
-                        <tr class="border-b border-slate-200 bg-white hover:bg-slate-50">
-                            <td class="px-4 py-2.5 font-semibold text-slate-800">${p.full_name}</td>
-                            <td class="px-4 py-2.5">${roleBadge}</td>
-                            <td class="px-4 py-2.5 text-slate-500">
-                                <div class="font-mono text-[11px]">${p.citizen_id ? 'บัตร: ' + p.citizen_id : ''}</div>
-                                <div class="text-slate-600">${p.contact_info || '—'}</div>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } catch (err) {
-                console.error("โหลดรายชื่อคู่ความประจำคดีไม่สำเร็จ:", err);
-                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-red-500">❌ ดึงข้อมูลล้มเหลว</td></tr>`;
-            }
-        }
-
-        // ⚡ 2. ฟังก์ชันเมื่อกดปุ่ม "เพิ่มคู่ความในคดีนี้" จากหน้าต่างรายละเอียดคดี
-        // ⚡ ฟังก์ชันเปิดฟอร์มเพิ่มคู่ความ โดยดึงรหัสคดีจากตัวแปรส่วนกลาง
-        function openContactModalFromCase() {
-    // วิ่งไปหยิบจากกล่องข้อความลับบนหน้าจอ
-    const currentCaseId = document.getElementById('view_case_id_hidden')?.value || currentViewingCaseId;
-
-    if (!currentCaseId) {
-        alert("⚠️ ไม่พบรหัสคดีความในระบบ โปรดลองปิดหน้าต่างรายละเอียดคดีแล้วเปิดใหม่อีกครั้ง");
-        return;
-    }
-
-    toggleContactModal(true);
-    document.getElementById('contact_case_id').value = currentCaseId;
-    document.getElementById('contactModalTitle').innerText = '👥 เพิ่มคู่ความประจำคดีนี้';
-}
-    </script>
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
