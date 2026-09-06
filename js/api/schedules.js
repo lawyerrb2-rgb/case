@@ -38,10 +38,19 @@ export async function listSchedulesByCase(caseId) {
   return data || [];
 }
 
-export async function createSchedule({ caseId, eventDateIso, eventType, notes = null, remindDays = 7 }) {
-  const { error } = await supabaseClient
-    .from("schedules")
-    .insert([{ case_id: caseId, event_date: eventDateIso, event_type: eventType, notes, remind_days: remindDays, is_completed: false }]);
+export async function createSchedule({ caseId, eventDateIso, eventType, notes = null, remindDays = 7, organizationId }) {
+  const { error } = await supabaseClient.from("schedules").insert([
+    {
+      case_id: caseId,
+      event_date: eventDateIso,
+      event_type: eventType,
+      notes,
+      remind_days: remindDays,
+      is_completed: false,
+      // ต้องแนบให้ตรงกับผู้ login อยู่ ไม่งั้น RLS with-check จะปฏิเสธ insert
+      organization_id: organizationId,
+    },
+  ]);
   if (error) throw error;
 }
 

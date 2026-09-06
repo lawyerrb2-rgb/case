@@ -5,6 +5,7 @@ import { listAllContacts, createContact, updateContact } from "../api/contacts.j
 import { getContactRoleMeta } from "../config.js";
 import { escapeHtml, showToast, getFormValue } from "../utils.js";
 import { setContactAddHandler, refreshCaseParticipantsIfOpen } from "./caseModals.js";
+import { state } from "../state.js";
 
 let contactsCache = [];
 
@@ -106,7 +107,9 @@ export async function handleSaveContact(e) {
     if (contactId) {
       await updateContact(contactId, contactData);
     } else {
-      await createContact(contactData);
+      // จำเป็นต้องแนบให้ตรงกับผู้ login อยู่ ไม่งั้น RLS with-check
+      // (sql/002_row_level_security.sql) จะปฏิเสธการ insert
+      await createContact({ ...contactData, organization_id: state.currentUser.organizationId });
     }
     showToast("🎉 บันทึกข้อมูลคู่ความเรียบร้อย!");
     toggleContactModal(false);

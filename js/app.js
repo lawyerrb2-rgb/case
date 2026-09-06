@@ -25,8 +25,12 @@ import {
 } from "./ui/caseModals.js";
 import { initContacts, refreshContactsTable, toggleContactModal, handleSaveContact } from "./ui/contacts.js";
 import { switchPage } from "./ui/router.js";
+import { getCurrentSession, fetchMyProfile, onAuthStateChange } from "./api/auth.js";
+import { showLoginScreen, showAppShell, renderUserBadge, initLoginForm, initLogoutButton } from "./ui/login.js";
 
 state.cases.pageSize = PAGE_SIZE;
+
+let appInitialized = false; // กัน bootstrap ทำงานซ้ำถ้า login/logout สลับไปมา
 
 function wireGlobalSearchAndFilters() {
   const searchInput = document.getElementById("globalSearch");
@@ -101,7 +105,11 @@ function wireContactModal() {
   document.getElementById("btnAddContact").addEventListener("click", () => toggleContactModal(true));
 }
 
-async function bootstrap() {
+/** เรียกครั้งเดียวหลัง login สำเร็จครั้งแรก ผูก event handler ทั้งหมดของแอปหลัก */
+function initAppOnce() {
+  if (appInitialized) return;
+  appInitialized = true;
+
   wireGlobalSearchAndFilters();
   wireSidebarNav();
   wireCaseModal();
@@ -113,8 +121,65 @@ async function bootstrap() {
 
   initCasesTable({ onEdit: openEditModal, onView: openViewModal });
   initContacts();
+}
 
+/** โหลดข้อมูลของสำนักงาน — เรียกทุกครั้งที่ login สำเร็จ (รวมถึง login ซ้ำหลัง logout) */
+async function loadWorkspaceData() {
   await Promise.all([refreshCasesTable(), renderUpcomingSchedules(), renderMetrics()]);
+}
+
+/**
+ * ตรวจสอบ session ของ Supabase Auth แล้วดึงโปรไฟล์ (สำนักงาน+บทบาท) มาเก็บ
+ * ใน state.currentUser — ถ้ายังไม่ login ให้แสดงหน้าล็อกอินแทนทั้งแอป
+ * เพราะทุก query ไปยัง cases/schedules/contacts ต้องมี session แนบไปด้วย
+ * ไม่งั้น RLS (sql/002_row_level_security.sql) จะปฏิเสธทุกคำขอ
+ */
+async function handleAuthenticatedSession(session) {
+  if (!session) {
+    state.currentUser = { userId: null, organizationId: null, role: null, fullName: null };
+    showLoginScreen();
+    return;
+  }
+
+  try {
+    const profile = await fetchMyProfile(session.user.id);
+    state.currentUser = {
+      userId: profile.user_id,
+      organizationId: profile.organization_id,
+      role: profile.role,
+      fullName: profile.full_name,
+    };
+    renderUserBadge(state.currentUser);
+    showAppShell();
+    initAppOnce();
+    await loadWorkspaceData();
+  } catch (err) {
+    console.error("โหลดโปรไฟล์ผู้ใช้ไม่สำเร็จ:", err.message);
+    showLoginScreen();
+    document.getElementById("loginError").textContent =
+      "⚠️ เข้าสู่ระบบสำเร็จแต่ไม่พบโปรไฟล์ผู้ใช้ โปรดติดต่อผู้ดูแลระบบ";
+    document.getElementById("loginError").classList.remove("hidden");
+  }
+}
+
+async function bootstrap() {
+  initLoginForm(async () => {
+    const session = await getCurrentSession();
+    await handleAuthenticatedSession(session);
+  });
+  initLogoutButton(() => {
+    showLoginScreen();
+  });
+
+  const session = await getCurrentSession();
+  await handleAuthenticatedSession(session);
+
+  // ถ้า session หมดอายุระหว่างใช้งาน (เช่น token refresh ล้มเหลว, หรือ
+  // ผู้ใช้ logout จากแท็บอื่น) ให้เด้งกลับหน้าล็อกอินทันทีแทนที่จะปล่อยให้
+  // ทุก request ค้าง/ถูก RLS ปฏิเสธเงียบๆ
+  onAuthStateChange((session) => {
+    if (!session) showLoginScreen();
+  });
 }
 
 document.addEventListener("DOMContentLoaded", bootstrap);

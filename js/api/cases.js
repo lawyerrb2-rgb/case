@@ -10,34 +10,28 @@ import { supabaseClient } from "../config.js";
 
 /**
  * ดึงรายการคดีความแบบแบ่งหน้า พร้อมรองรับค้นหาด่วนและกรองสถานะ
+ *
+ * เดิมฟังก์ชันนี้ต่อสตริงเข้า `.or(...)` ฝั่ง client (ทั้งช้าเมื่อข้อมูล
+ * มาก และต้อง sanitize อักขระพิเศษเอง) ตอนนี้ย้ายไปเรียก RPC
+ * `search_cases` แทน ซึ่งรันในฐานข้อมูล ใช้ full-text index (GIN) และ
+ * กรอง organization_id ให้อัตโนมัติผ่าน current_organization_id() —
+ * ดู sql/004_search_rpc.sql
  * @returns {Promise<{cases: object[], totalCount: number}>}
  */
 export async function listCases({ search = "", status = "ALL", page = 1, pageSize = 10 } = {}) {
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
-
-  let query = supabaseClient
-    .from("cases")
-    .select("*", { count: "exact" })
-    .order("created_at", { ascending: false });
-
-  if (search.trim() !== "") {
-    // หมายเหตุ: อักขระ % และ , ในคำค้นหาอาจกระทบรูปแบบของ .or() นี้ได้
-    // สำหรับระบบระดับองค์กรควรย้ายการค้นหาไปทำผ่าน Postgres function (rpc)
-    // หรือ full-text search index แทนการต่อสตริงแบบนี้
-    const term = search.trim().replace(/[%,]/g, "");
-    query = query.or(
-      `black_number.ilike.%${term}%,red_number.ilike.%${term}%,court_name.ilike.%${term}%,case_status.ilike.%${term}%,description.ilike.%${term}%`
-    );
-  }
-
-  if (status !== "ALL") {
-    query = query.eq("case_status", status);
-  }
-
-  const { data, error, count } = await query.range(from, to);
+  const { data, error } = await supabaseClient.rpc("search_cases", {
+    p_search: search.trim(),
+    p_status: status,
+    p_page: page,
+    p_page_size: pageSize,
+  });
   if (error) throw error;
-  return { cases: data || [], totalCount: count || 0 };
+
+  const rows = data || [];
+  const totalCount = rows.length > 0 ? Number(rows[0].total_count) : 0;
+  // total_count เป็นคอลัมน์ช่วยคำนวณเพจจิเนชันเท่านั้น ไม่ต้องส่งต่อให้ UI
+  const cases = rows.map(({ total_count, ...rest }) => rest);
+  return { cases, totalCount };
 }
 
 /** ดึงคดีทั้งหมดแบบไม่แบ่งหน้า (ใช้กับ modal ค้นหาคดีเพื่ออัปเดตสถานะ/ลงนัด) */

@@ -10,8 +10,9 @@ import {
   findCaseIdsByScheduleTypeKeyword,
 } from "../api/schedules.js";
 import { listContactsByCase } from "../api/contacts.js";
+import { listActivityForCase } from "../api/activityLog.js";
 import { state } from "../state.js";
-import { getStatusMeta, getContactRoleMeta } from "../config.js";
+import { getStatusMeta, getContactRoleMeta, canCloseCase } from "../config.js";
 import { escapeHtml, formatDateTimeTH, isoToDateTimeLocalValue, showToast, getFormValue } from "../utils.js";
 import { refreshCasesTable } from "./casesTable.js";
 import { renderMetrics, renderUpcomingSchedules } from "./dashboard.js";
@@ -38,6 +39,7 @@ export function toggleCaseModal(show) {
 
 export async function handleCreateCase(e) {
   e.preventDefault();
+  const { organizationId, userId } = state.currentUser;
   const caseData = {
     black_number: getFormValue("black_number"),
     red_number: getFormValue("red_number") || null,
@@ -48,6 +50,11 @@ export async function handleCreateCase(e) {
     plaintiff_name: getFormValue("plaintiff_name"),
     defendant_name: getFormValue("defendant_name"),
     client_role: getFormValue("client_role"),
+    // จำเป็นต้องแนบมาให้ตรงกับผู้ login อยู่ ไม่งั้น RLS with-check
+    // (sql/002_row_level_security.sql) จะปฏิเสธการ insert ทันที
+    organization_id: organizationId,
+    created_by: userId,
+    assigned_lawyer_id: userId,
   };
   const eventDate = getFormValue("event_date");
   const eventType = getFormValue("event_type");
@@ -55,7 +62,12 @@ export async function handleCreateCase(e) {
   try {
     const newCase = await createCase(caseData);
     if (newCase) {
-      await createSchedule({ caseId: newCase.case_id, eventDateIso: new Date(eventDate).toISOString(), eventType });
+      await createSchedule({
+        caseId: newCase.case_id,
+        eventDateIso: new Date(eventDate).toISOString(),
+        eventType,
+        organizationId,
+      });
     }
     showToast("🎉 บันทึกคดีความและลงปฏิทินวันนัดหมายสำเร็จ!");
     toggleCaseModal(false);
@@ -138,7 +150,7 @@ export async function handleUpdateCase(e) {
     if (firstEventId) {
       await updateSchedule(firstEventId, { eventDateIso, eventType });
     } else {
-      await createSchedule({ caseId, eventDateIso, eventType });
+      await createSchedule({ caseId, eventDateIso, eventType, organizationId: state.currentUser.organizationId });
     }
 
     showToast("🎉 แก้ไขข้อมูลคดีความและกำหนดนัดหมายเรียบร้อยแล้ว!");
@@ -163,6 +175,12 @@ export async function toggleStatusModal(show) {
     document.getElementById("status_case_id").value = "";
     dropdownList.innerHTML = '<div class="p-3 text-center text-slate-400 text-xs">⏳ กำลังเตรียมฐานข้อมูลคดีความ...</div>';
     dropdownList.classList.remove("hidden");
+
+    // ผู้ช่วยทนายความ (paralegal)/ทนายความทั่วไปปิดสำนวนคดีถาวรไม่ได้
+    // (สอดคล้องกับ RLS policy "cases_update_same_org" ในฐานข้อมูล) — ซ่อน
+    // ตัวเลือกนี้ไว้เพื่อไม่ให้กดแล้วเจอ error ที่อธิบายไม่ได้จาก RLS
+    const closedOption = document.querySelector('#new_case_status option[value="Closed"]');
+    if (closedOption) closedOption.disabled = !canCloseCase(state.currentUser.role);
 
     try {
       const cases = await listAllCasesLite();
@@ -334,7 +352,13 @@ export async function handleCreateAdditionalSchedule(e) {
   }
 
   try {
-    await createSchedule({ caseId, eventDateIso: new Date(eventDate).toISOString(), eventType, notes });
+    await createSchedule({
+      caseId,
+      eventDateIso: new Date(eventDate).toISOString(),
+      eventType,
+      notes,
+      organizationId: state.currentUser.organizationId,
+    });
     showToast("🎉 บันทึกวันนัดหมายครั้งต่อไปเรียบร้อยแล้ว!");
     toggleScheduleModal(false);
     await renderUpcomingSchedules();
@@ -365,7 +389,47 @@ export async function openViewModal(caseRow) {
 
   state.viewingCaseId = caseRow.case_id;
   toggleViewModal(true);
-  await renderCaseParticipants(caseRow.case_id);
+  await Promise.all([renderCaseParticipants(caseRow.case_id), renderCaseActivityLog(caseRow.case_id)]);
+}
+
+const ACTION_LABELS = {
+  created: "สร้างคดีความ",
+  status_changed: "เปลี่ยนสถานะคดี",
+  updated: "แก้ไขข้อมูลคดี",
+};
+
+/** ประวัติการแก้ไข (audit trail) — อ่านจาก case_activity_log ที่ trigger ในฐานข้อมูลเติมให้อัตโนมัติ */
+async function renderCaseActivityLog(caseId) {
+  const container = document.getElementById("caseActivityLogList");
+  if (!container) return;
+  container.innerHTML = `<p class="text-xs text-slate-400 py-2">⏳ กำลังโหลดประวัติ...</p>`;
+
+  try {
+    const entries = await listActivityForCase(caseId);
+    if (entries.length === 0) {
+      container.innerHTML = `<p class="text-xs text-slate-400 py-2">ยังไม่มีประวัติการแก้ไข</p>`;
+      return;
+    }
+    container.innerHTML = entries
+      .map((e) => {
+        const { date, time } = formatDateTimeTH(e.changed_at);
+        const who = escapeHtml(e.profiles?.full_name || "ไม่ทราบผู้แก้ไข");
+        const label = ACTION_LABELS[e.action] || e.action;
+        const statusChange =
+          e.action === "status_changed"
+            ? ` (${escapeHtml(getStatusMeta(e.old_status).label)} → ${escapeHtml(getStatusMeta(e.new_status).label)})`
+            : "";
+        return `
+          <div class="text-xs text-slate-600 border-b border-slate-100 py-1.5 last:border-0">
+            <span class="font-mono text-slate-400">${date} ${time}</span>
+            — <b>${who}</b> ${escapeHtml(label)}${statusChange}
+          </div>`;
+      })
+      .join("");
+  } catch (err) {
+    console.error("โหลดประวัติการแก้ไขไม่สำเร็จ:", err);
+    container.innerHTML = `<p class="text-xs text-red-500 py-2">❌ โหลดประวัติล้มเหลว</p>`;
+  }
 }
 
 async function renderCaseParticipants(caseId) {

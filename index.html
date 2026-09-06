@@ -11,6 +11,36 @@
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col">
 
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <!-- แสดงเมื่อยังไม่มี Supabase Auth session — ซ่อน #appShell ไว้จนกว่าจะ login สำเร็จ -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-slate-950 p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm p-8">
+            <div class="text-center mb-6">
+                <h1 class="text-xl font-bold text-slate-900">M Justice Partners</h1>
+                <p class="text-xs text-slate-500 mt-1">เข้าสู่ระบบบริหารจัดการคดีความ</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">อีเมล</label>
+                    <input type="email" id="login_email" required autocomplete="username"
+                        class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">รหัสผ่าน</label>
+                    <input type="password" id="login_password" required autocomplete="current-password"
+                        class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
+                </div>
+                <p id="loginError" class="hidden text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></p>
+                <button type="submit" id="btnLoginSubmit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors shadow-sm">
+                    เข้าสู่ระบบ
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== APP SHELL (ซ่อนไว้จนกว่าจะ login สำเร็จ) ==================== -->
+    <div id="appShell" class="hidden min-h-screen flex flex-col">
+
     <!-- ==================== HEADER ==================== -->
     <header class="sticky top-0 z-50 flex flex-col md:flex-row items-center justify-between bg-slate-950 px-6 py-4 text-white shadow-xl border-b border-slate-800">
         <div class="flex items-center space-x-3 mb-4 md:mb-0">
@@ -26,6 +56,15 @@
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
             <input type="text" id="globalSearch" placeholder="ค้นหาด่วน (เลขคดีดำ, ศาล, รายละเอียด)..."
                 class="w-full bg-slate-900 text-sm text-slate-200 pl-10 pr-4 py-2.5 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner" />
+        </div>
+        <div class="flex items-center gap-3 mt-4 md:mt-0 md:ml-4">
+            <div class="text-right leading-tight">
+                <div id="userBadgeName" class="text-sm font-semibold text-white"></div>
+                <div id="userBadgeRole" class="text-xs text-slate-400"></div>
+            </div>
+            <button type="button" id="btnLogout" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg border border-slate-700 transition-colors">
+                ออกจากระบบ
+            </button>
         </div>
     </header>
 
@@ -453,6 +492,11 @@
                     <p class="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 leading-relaxed whitespace-pre-line" id="view_desc"></p>
                 </div>
 
+                <div class="pt-4 border-t border-slate-200">
+                    <h4 class="text-sm font-bold text-slate-800 mb-2">🕘 ประวัติการแก้ไข (Audit Trail)</h4>
+                    <div id="caseActivityLogList" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 max-h-40 overflow-y-auto"></div>
+                </div>
+
                 <div class="pt-5 border-t border-slate-200">
                     <div class="flex items-center justify-between mb-3">
                         <h4 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">👥 รายชื่อคู่ความและพยานประจำคดี</h4>
@@ -523,6 +567,8 @@
             </form>
         </div>
     </div>
+
+    </div> <!-- /#appShell -->
 
     <script type="module" src="js/app.js"></script>
 </body>

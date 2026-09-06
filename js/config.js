@@ -110,3 +110,22 @@ export const CONTACT_ROLES = {
 export function getContactRoleMeta(roleKey) {
   return CONTACT_ROLES[roleKey] || { label: roleKey || "คู่ความ", badgeClass: "bg-slate-100 text-slate-600" };
 }
+
+// -------------------------------------------------------------
+// 7) บทบาทผู้ใช้งานระบบ (ตาราง profiles) — ใช้คุมสิทธิ์ฝั่ง UI
+// -------------------------------------------------------------
+// การบังคับใช้จริงอยู่ที่ RLS policy ในฐานข้อมูล (sql/002_row_level_security.sql)
+// ค่าพวกนี้ใช้แค่ "ซ่อน/ปิด" ปุ่มที่ผู้ใช้ไม่มีสิทธิ์อยู่แล้วเพื่อ UX ที่ดีขึ้น
+// ห้ามพึ่งพาชั้นนี้เพียงอย่างเดียวเพื่อความปลอดภัย
+export const USER_ROLES = {
+  admin: "ผู้ดูแลระบบ",
+  partner: "หุ้นส่วนสำนักงาน",
+  lawyer: "ทนายความ",
+  paralegal: "ผู้ช่วยทนายความ",
+};
+
+// เฉพาะ admin/partner เท่านั้นที่ปิดสำนวนคดีถาวรได้ (สอดคล้องกับ RLS policy
+// "cases_update_same_org" ที่บล็อกการตั้ง case_status = 'Closed' จากบทบาทอื่น)
+export function canCloseCase(role) {
+  return role === "admin" || role === "partner";
+}
