@@ -27,6 +27,9 @@ export const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABAS
 // -------------------------------------------------------------
 export const PAGE_SIZE = 10;
 
+// ชื่อ Supabase Storage bucket สำหรับไฟล์แนบคดี (ดู sql/008_case_documents_storage.sql)
+export const DOCUMENTS_BUCKET = "case-documents";
+
 // -------------------------------------------------------------
 // 3) สถานะคดีความ — ป้ายกำกับ, สี, และคำค้นหาภาษาไทยที่เกี่ยวข้อง
 // -------------------------------------------------------------
@@ -127,5 +130,9 @@ export const USER_ROLES = {
 // เฉพาะ admin/partner เท่านั้นที่ปิดสำนวนคดีถาวรได้ (สอดคล้องกับ RLS policy
 // "cases_update_same_org" ที่บล็อกการตั้ง case_status = 'Closed' จากบทบาทอื่น)
 export function canCloseCase(role) {
+  return role === "admin" || role === "partner";
+}
+
+export function isAdminOrPartner(role) {
   return role === "admin" || role === "partner";
 }

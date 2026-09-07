@@ -47,29 +47,30 @@ export function resetToFirstPage() {
 export async function refreshCasesTable() {
   const tbody = document.getElementById("caseTableBody");
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-slate-400">⏳ กำลังโหลดข้อมูลคดีความ...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-slate-400">⏳ กำลังโหลดข้อมูลคดีความ...</td></tr>`;
 
   try {
-    const { searchTerm, statusFilter, currentPage, pageSize } = state.cases;
+    const { searchTerm, statusFilter, currentPage, pageSize, assignedToMe } = state.cases;
     const { cases, totalCount } = await listCases({
       search: searchTerm,
       status: statusFilter,
       page: currentPage,
       pageSize,
+      assignedTo: assignedToMe ? state.currentUser.userId : null,
     });
 
     state.cases.rows = cases;
     updatePaginationUI(currentPage, pageSize, totalCount);
 
     if (cases.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">❌ ไม่พบข้อมูลคดีความในระบบ</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">❌ ไม่พบข้อมูลคดีความในระบบ</td></tr>`;
       return;
     }
 
     const allSchedules = await listAllSchedulesForCaseMapping();
     tbody.innerHTML = cases.map((c, index) => renderCaseRow(c, index, allSchedules)).join("");
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-500">❌ โหลดข้อมูลล้มเหลว: ${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-red-500">❌ โหลดข้อมูลล้มเหลว: ${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
@@ -111,6 +112,7 @@ function renderCaseRow(c, index, allSchedules) {
       <td class="px-6 py-4 font-mono font-medium">${formatCurrency(c.claim_amount)}</td>
       <td class="px-6 py-4 text-xs font-medium text-slate-700 max-w-[150px] truncate">${escapeHtml(latestType)}</td>
       <td class="px-6 py-4 text-xs font-mono text-slate-600">${escapeHtml(latestDate)}</td>
+      <td class="px-6 py-4 text-xs text-slate-600">${escapeHtml(c.assigned_lawyer_name || "— ยังไม่มอบหมาย —")}</td>
       <td class="px-6 py-4">${statusBadge}</td>
       <td class="px-6 py-4 text-center space-x-1 whitespace-nowrap">
         <button type="button" data-action="view" data-index="${index}"

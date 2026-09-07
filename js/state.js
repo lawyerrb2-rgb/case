@@ -21,6 +21,7 @@ export const state = {
     pageSize: 10,
     searchTerm: "",
     statusFilter: "ALL",
+    assignedToMe: false,
     rows: [], // แคชผลลัพธ์หน้าปัจจุบัน ใช้ตอนกดปุ่ม "แก้ไข/เปิดดู" ในแถว
   },
   statusModal: {

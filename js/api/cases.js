@@ -18,12 +18,13 @@ import { supabaseClient } from "../config.js";
  * ดู sql/004_search_rpc.sql
  * @returns {Promise<{cases: object[], totalCount: number}>}
  */
-export async function listCases({ search = "", status = "ALL", page = 1, pageSize = 10 } = {}) {
+export async function listCases({ search = "", status = "ALL", page = 1, pageSize = 10, assignedTo = null } = {}) {
   const { data, error } = await supabaseClient.rpc("search_cases", {
     p_search: search.trim(),
     p_status: status,
     p_page: page,
     p_page_size: pageSize,
+    p_assigned_to: assignedTo,
   });
   if (error) throw error;
 

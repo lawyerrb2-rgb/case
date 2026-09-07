@@ -1,28 +1,41 @@
 // =============================================================
-// ui/router.js — สลับหน้าจอ "คดีความ" <-> "สมุดรายชื่อ"
+// ui/router.js — สลับหน้าจอ "คดีความ" <-> "สมุดรายชื่อ" <-> "จัดการผู้ใช้งาน"
 // =============================================================
-// บั๊กของเดิม: switchPage() พยายามหา document.getElementById('casesPage')
-// แต่เนื้อหาหน้าคดีความจริงๆ ไม่เคยถูกครอบด้วย id="casesPage" เลย
-// (getElementById('dashboardPage') || getElementById('casesPage') ได้ null
-// ทั้งคู่) ผลคือ `casesPage?.classList.add('hidden')` ไม่ทำงาน — พอสลับไป
-// หน้าสมุดรายชื่อ เนื้อหาคดีความยังค้างซ้อนอยู่ข้างใต้ ในไฟล์ index.html
-// ที่แก้ใหม่ได้ครอบ id="casesPage" ไว้ให้ถูกต้องแล้ว
-import { refreshContactsTable } from "./contacts.js";
-
 const ACTIVE_CLASS = "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg bg-blue-50 text-blue-700";
 const INACTIVE_CLASS = "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900";
 
+const PAGES = {
+  cases: { pageId: "casesPage", menuId: "menuCases" },
+  contacts: { pageId: "contactsPage", menuId: "menuContacts" },
+  admin: { pageId: "adminPage", menuId: "menuAdmin" },
+};
+
+// เติมด้วย registerPageRefresh() จาก app.js ตอน bootstrap เพื่อไม่ต้อง
+// import ui/contacts.js และ ui/admin.js เข้ามาตรงนี้ (กัน circular import
+// เพราะทั้งสองไฟล์นั้น import จาก caseModals.js ซึ่งอาจย้อนมา import router.js)
+const onEnterPage = {};
+
+export function registerPageRefresh(page, callback) {
+  onEnterPage[page] = callback;
+}
+
 export function switchPage(page) {
-  const casesPage = document.getElementById("casesPage");
-  const contactsPage = document.getElementById("contactsPage");
-  const menuCases = document.getElementById("menuCases");
-  const menuContacts = document.getElementById("menuContacts");
+  Object.entries(PAGES).forEach(([key, { pageId, menuId }]) => {
+    const pageEl = document.getElementById(pageId);
+    const menuEl = document.getElementById(menuId);
+    const isActive = key === page;
+    pageEl.classList.toggle("hidden", !isActive);
+    // เมนู admin ถูกซ่อนไว้ทั้งหมดด้วย class "hidden" เฉยๆ (ไม่มี "flex")
+    // สำหรับผู้ใช้ที่ไม่มีสิทธิ์ — ไม่แตะต้องถ้ายังไม่เคยถูกเปิดให้เห็น
+    if (menuEl.classList.contains("hidden") && key === "admin") return;
+    menuEl.className = isActive ? ACTIVE_CLASS : INACTIVE_CLASS;
+  });
 
-  const showingContacts = page === "contacts";
-  casesPage.classList.toggle("hidden", showingContacts);
-  contactsPage.classList.toggle("hidden", !showingContacts);
-  menuCases.className = showingContacts ? INACTIVE_CLASS : ACTIVE_CLASS;
-  menuContacts.className = showingContacts ? ACTIVE_CLASS : INACTIVE_CLASS;
+  if (onEnterPage[page]) onEnterPage[page]();
+}
 
-  if (showingContacts) refreshContactsTable();
+/** เรียกครั้งเดียวตอนโหลดสิทธิ์ผู้ใช้เสร็จ เพื่อเปิดเมนู admin ให้ role ที่มีสิทธิ์เห็น */
+export function revealAdminMenuItem() {
+  document.getElementById("menuAdmin").classList.remove("hidden");
+  document.getElementById("menuAdmin").className = INACTIVE_CLASS;
 }

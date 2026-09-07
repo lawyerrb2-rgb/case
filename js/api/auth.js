@@ -13,6 +13,24 @@ export async function signInWithPassword(email, password) {
   return data.session;
 }
 
+/**
+ * สมัครสมาชิกใหม่ — ตัว trigger ในฐานข้อมูล (handle_new_auth_user, ดู
+ * sql/006_invites_and_admin.sql) จะจับคู่อีเมลนี้กับคำเชิญที่ admin/partner
+ * สร้างไว้ล่วงหน้าโดยอัตโนมัติ ถ้าไม่มีคำเชิญตรงกัน ผู้ใช้จะได้ role
+ * 'pending' และเข้าใช้งานอะไรไม่ได้จนกว่า admin จะดึงเข้าสำนักงานเอง
+ * คืนค่า session ถ้าโปรเจกต์ปิด "Confirm email" ไว้ (ได้ session ทันที)
+ * หรือ null ถ้าต้องรอกดยืนยันจากอีเมลก่อน
+ */
+export async function signUpWithPassword(email, password, fullName) {
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fullName } },
+  });
+  if (error) throw error;
+  return data.session;
+}
+
 export async function signOut() {
   const { error } = await supabaseClient.auth.signOut();
   if (error) throw error;

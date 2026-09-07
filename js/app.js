@@ -2,7 +2,7 @@
 // app.js — จุดเริ่มต้นของแอป: ผูก event ทั้งหมด แล้วโหลดข้อมูลครั้งแรก
 // =============================================================
 import { state } from "./state.js";
-import { PAGE_SIZE } from "./config.js";
+import { PAGE_SIZE, isAdminOrPartner } from "./config.js";
 import { debounce } from "./utils.js";
 import { renderMetrics, renderUpcomingSchedules } from "./ui/dashboard.js";
 import { initCasesTable, refreshCasesTable, resetToFirstPage } from "./ui/casesTable.js";
@@ -22,11 +22,22 @@ import {
   toggleViewModal,
   openViewModal,
   handleOpenContactModalFromCase,
+  handleUploadCaseDocument,
+  initCaseDocumentsList,
 } from "./ui/caseModals.js";
 import { initContacts, refreshContactsTable, toggleContactModal, handleSaveContact } from "./ui/contacts.js";
-import { switchPage } from "./ui/router.js";
+import { switchPage, registerPageRefresh, revealAdminMenuItem } from "./ui/router.js";
+import { initAdminPage, refreshAdminPage } from "./ui/admin.js";
 import { getCurrentSession, fetchMyProfile, onAuthStateChange } from "./api/auth.js";
-import { showLoginScreen, showAppShell, renderUserBadge, initLoginForm, initLogoutButton } from "./ui/login.js";
+import {
+  showLoginScreen,
+  showPendingScreen,
+  showAppShell,
+  renderUserBadge,
+  initLoginForm,
+  initSignupForm,
+  initLogoutButton,
+} from "./ui/login.js";
 
 state.cases.pageSize = PAGE_SIZE;
 
@@ -48,6 +59,12 @@ function wireGlobalSearchAndFilters() {
     resetToFirstPage();
     refreshCasesTable();
   });
+
+  document.getElementById("filterAssignedToMe").addEventListener("change", (e) => {
+    state.cases.assignedToMe = e.target.checked;
+    resetToFirstPage();
+    refreshCasesTable();
+  });
 }
 
 function wireSidebarNav() {
@@ -58,6 +75,10 @@ function wireSidebarNav() {
   document.getElementById("menuContacts").addEventListener("click", (e) => {
     e.preventDefault();
     switchPage("contacts");
+  });
+  document.getElementById("menuAdmin").addEventListener("click", (e) => {
+    e.preventDefault();
+    switchPage("admin");
   });
   document.getElementById("btnAddCase").addEventListener("click", () => toggleCaseModal(true));
   document.getElementById("btnAddSchedule").addEventListener("click", () => toggleScheduleModal(true));
@@ -96,6 +117,8 @@ function wireViewModal() {
   document.getElementById("btnCloseViewModal").addEventListener("click", () => toggleViewModal(false));
   document.getElementById("btnCloseViewModalFooter").addEventListener("click", () => toggleViewModal(false));
   document.getElementById("btnAddParticipant").addEventListener("click", handleOpenContactModalFromCase);
+  document.getElementById("caseDocumentInput").addEventListener("change", handleUploadCaseDocument);
+  initCaseDocumentsList();
 }
 
 function wireContactModal() {
@@ -121,6 +144,10 @@ function initAppOnce() {
 
   initCasesTable({ onEdit: openEditModal, onView: openViewModal });
   initContacts();
+  initAdminPage();
+
+  registerPageRefresh("contacts", refreshContactsTable);
+  registerPageRefresh("admin", refreshAdminPage);
 }
 
 /** โหลดข้อมูลของสำนักงาน — เรียกทุกครั้งที่ login สำเร็จ (รวมถึง login ซ้ำหลัง logout) */
@@ -133,6 +160,10 @@ async function loadWorkspaceData() {
  * ใน state.currentUser — ถ้ายังไม่ login ให้แสดงหน้าล็อกอินแทนทั้งแอป
  * เพราะทุก query ไปยัง cases/schedules/contacts ต้องมี session แนบไปด้วย
  * ไม่งั้น RLS (sql/002_row_level_security.sql) จะปฏิเสธทุกคำขอ
+ *
+ * ถ้า role เป็น 'pending' (สมัครเองโดยไม่มีคำเชิญตรงกัน — ดู
+ * sql/006_invites_and_admin.sql) ให้โชว์หน้ารอการอนุมัติแทน เพราะ
+ * organization_id เป็น null และจะไม่ผ่าน RLS ของตารางไหนเลย
  */
 async function handleAuthenticatedSession(session) {
   if (!session) {
@@ -149,9 +180,16 @@ async function handleAuthenticatedSession(session) {
       role: profile.role,
       fullName: profile.full_name,
     };
+
+    if (profile.role === "pending" || !profile.organization_id) {
+      showPendingScreen();
+      return;
+    }
+
     renderUserBadge(state.currentUser);
     showAppShell();
     initAppOnce();
+    if (isAdminOrPartner(profile.role)) revealAdminMenuItem();
     await loadWorkspaceData();
   } catch (err) {
     console.error("โหลดโปรไฟล์ผู้ใช้ไม่สำเร็จ:", err.message);
@@ -163,13 +201,14 @@ async function handleAuthenticatedSession(session) {
 }
 
 async function bootstrap() {
-  initLoginForm(async () => {
+  const onLoginSuccess = async () => {
     const session = await getCurrentSession();
     await handleAuthenticatedSession(session);
-  });
-  initLogoutButton(() => {
-    showLoginScreen();
-  });
+  };
+
+  initLoginForm(onLoginSuccess);
+  initSignupForm(onLoginSuccess);
+  initLogoutButton(() => showLoginScreen());
 
   const session = await getCurrentSession();
   await handleAuthenticatedSession(session);

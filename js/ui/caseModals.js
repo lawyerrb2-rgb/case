@@ -11,8 +11,10 @@ import {
 } from "../api/schedules.js";
 import { listContactsByCase } from "../api/contacts.js";
 import { listActivityForCase } from "../api/activityLog.js";
+import { listOrgMembers } from "../api/members.js";
+import { uploadCaseDocument, listCaseDocuments, getSignedDownloadUrl, deleteCaseDocument } from "../api/documents.js";
 import { state } from "../state.js";
-import { getStatusMeta, getContactRoleMeta, canCloseCase } from "../config.js";
+import { getStatusMeta, getContactRoleMeta, canCloseCase, isAdminOrPartner } from "../config.js";
 import { escapeHtml, formatDateTimeTH, isoToDateTimeLocalValue, showToast, getFormValue } from "../utils.js";
 import { refreshCasesTable } from "./casesTable.js";
 import { renderMetrics, renderUpcomingSchedules } from "./dashboard.js";
@@ -24,6 +26,19 @@ export function setContactAddHandler(handler) {
   onContactAddRequested = handler;
 }
 
+/** เติม dropdown "มอบหมายให้ทนายความ" ในฟอร์มเพิ่ม/แก้ไขคดี ด้วยสมาชิกในสำนักงาน */
+async function populateAssignedLawyerOptions(selectId, selectedUserId) {
+  const select = document.getElementById(selectId);
+  try {
+    const members = await listOrgMembers();
+    select.innerHTML = members
+      .map((m) => `<option value="${m.user_id}" ${m.user_id === selectedUserId ? "selected" : ""}>${escapeHtml(m.full_name)}</option>`)
+      .join("");
+  } catch (err) {
+    console.error("โหลดรายชื่อทนายความไม่สำเร็จ:", err.message);
+  }
+}
+
 // -------------------------------------------------------------
 // Modal: เพิ่มคดีความใหม่
 // -------------------------------------------------------------
@@ -31,6 +46,7 @@ export function toggleCaseModal(show) {
   const modal = document.getElementById("caseModal");
   if (show) {
     modal.classList.remove("hidden");
+    populateAssignedLawyerOptions("assigned_lawyer_id", state.currentUser.userId);
   } else {
     modal.classList.add("hidden");
     document.getElementById("caseForm").reset();
@@ -54,7 +70,7 @@ export async function handleCreateCase(e) {
     // (sql/002_row_level_security.sql) จะปฏิเสธการ insert ทันที
     organization_id: organizationId,
     created_by: userId,
-    assigned_lawyer_id: userId,
+    assigned_lawyer_id: getFormValue("assigned_lawyer_id") || userId,
   };
   const eventDate = getFormValue("event_date");
   const eventType = getFormValue("event_type");
@@ -100,6 +116,7 @@ export async function openEditModal(caseRow) {
   document.getElementById("edit_plaintiff_name").value = caseRow.plaintiff_name || "";
   document.getElementById("edit_defendant_name").value = caseRow.defendant_name || "";
   document.getElementById("edit_client_role").value = caseRow.client_role || "โจทก์";
+  await populateAssignedLawyerOptions("edit_assigned_lawyer_id", caseRow.assigned_lawyer_id);
 
   try {
     const schedules = await listSchedulesByCase(caseRow.case_id);
@@ -132,6 +149,7 @@ export async function handleUpdateCase(e) {
     plaintiff_name: getFormValue("edit_plaintiff_name"),
     defendant_name: getFormValue("edit_defendant_name"),
     client_role: getFormValue("edit_client_role"),
+    assigned_lawyer_id: getFormValue("edit_assigned_lawyer_id") || null,
   };
   const eventDateRaw = getFormValue("edit_event_date");
   const eventType = getFormValue("edit_event_type");
@@ -389,7 +407,11 @@ export async function openViewModal(caseRow) {
 
   state.viewingCaseId = caseRow.case_id;
   toggleViewModal(true);
-  await Promise.all([renderCaseParticipants(caseRow.case_id), renderCaseActivityLog(caseRow.case_id)]);
+  await Promise.all([
+    renderCaseParticipants(caseRow.case_id),
+    renderCaseActivityLog(caseRow.case_id),
+    renderCaseDocuments(caseRow.case_id),
+  ]);
 }
 
 const ACTION_LABELS = {
@@ -477,4 +499,95 @@ export async function refreshCaseParticipantsIfOpen(caseId) {
   if (state.viewingCaseId === caseId) {
     await renderCaseParticipants(caseId);
   }
+}
+
+// -------------------------------------------------------------
+// ไฟล์แนบคดี (Supabase Storage — bucket private, ต้องใช้ signed URL เสมอ)
+// -------------------------------------------------------------
+function formatFileSize(bytes) {
+  if (!bytes) return "";
+  const kb = bytes / 1024;
+  return kb < 1024 ? `${kb.toFixed(0)} KB` : `${(kb / 1024).toFixed(1)} MB`;
+}
+
+async function renderCaseDocuments(caseId) {
+  const container = document.getElementById("caseDocumentsList");
+  if (!container) return;
+  container.innerHTML = `<p class="text-xs text-slate-400 py-2">⏳ กำลังโหลดไฟล์แนบ...</p>`;
+
+  try {
+    const docs = await listCaseDocuments(caseId);
+    if (docs.length === 0) {
+      container.innerHTML = `<p class="text-xs text-slate-400 py-2">ยังไม่มีไฟล์แนบสำหรับคดีนี้</p>`;
+      return;
+    }
+    container.innerHTML = docs
+      .map(
+        (d) => `
+          <div class="flex items-center justify-between px-3 py-2 border-b border-slate-100 text-sm last:border-0">
+            <div class="min-w-0">
+              <button type="button" data-download-doc="${d.file_path}" class="text-blue-600 hover:underline font-medium truncate block max-w-[220px] text-left">
+                📎 ${escapeHtml(d.file_name)}
+              </button>
+              <span class="text-[11px] text-slate-400">${formatFileSize(d.file_size)} · โดย ${escapeHtml(d.profiles?.full_name || "ไม่ทราบ")}</span>
+            </div>
+            <button type="button" data-delete-doc="${d.document_id}" data-delete-doc-path="${d.file_path}" class="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">ลบ</button>
+          </div>`
+      )
+      .join("");
+  } catch (err) {
+    console.error("โหลดไฟล์แนบไม่สำเร็จ:", err);
+    container.innerHTML = `<p class="text-xs text-red-500 py-2">❌ โหลดไฟล์แนบล้มเหลว</p>`;
+  }
+}
+
+export async function handleUploadCaseDocument(e) {
+  const file = e.target.files[0];
+  e.target.value = ""; // เคลียร์ input ให้เลือกไฟล์เดิมซ้ำได้อีกครั้งถ้าต้องการ
+  if (!file) return;
+
+  const caseId = document.getElementById("view_case_id_hidden").value || state.viewingCaseId;
+  if (!caseId) return;
+
+  try {
+    await uploadCaseDocument({
+      file,
+      caseId,
+      organizationId: state.currentUser.organizationId,
+      uploadedBy: state.currentUser.userId,
+    });
+    showToast("📎 อัปโหลดไฟล์แนบเรียบร้อย");
+    await renderCaseDocuments(caseId);
+  } catch (err) {
+    showToast("❌ อัปโหลดไฟล์ไม่สำเร็จ: " + err.message, "error");
+  }
+}
+
+/** เรียกครั้งเดียวตอน bootstrap เพื่อผูก event ปุ่มดาวน์โหลด/ลบไฟล์แนบ (delegation) */
+export function initCaseDocumentsList() {
+  document.getElementById("caseDocumentsList").addEventListener("click", async (e) => {
+    const downloadBtn = e.target.closest("button[data-download-doc]");
+    if (downloadBtn) {
+      try {
+        const url = await getSignedDownloadUrl(downloadBtn.dataset.downloadDoc);
+        window.open(url, "_blank", "noopener,noreferrer");
+      } catch (err) {
+        showToast("❌ เปิดไฟล์ไม่สำเร็จ: " + err.message, "error");
+      }
+      return;
+    }
+
+    const deleteBtn = e.target.closest("button[data-delete-doc]");
+    if (deleteBtn) {
+      if (!confirm("ลบไฟล์แนบนี้ใช่หรือไม่? การลบไม่สามารถกู้คืนได้")) return;
+      try {
+        await deleteCaseDocument(deleteBtn.dataset.deleteDoc, deleteBtn.dataset.deleteDocPath);
+        showToast("🗑️ ลบไฟล์แนบแล้ว");
+        const caseId = document.getElementById("view_case_id_hidden").value || state.viewingCaseId;
+        if (caseId) await renderCaseDocuments(caseId);
+      } catch (err) {
+        showToast("❌ ลบไฟล์ไม่สำเร็จ: " + err.message, "error");
+      }
+    }
+  });
 }
