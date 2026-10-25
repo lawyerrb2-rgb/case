@@ -31,6 +31,7 @@ export function switchPage(page) {
     menuEl.className = isActive ? ACTIVE_CLASS : INACTIVE_CLASS;
   });
 
+  window.scrollTo({ top: 0 });
   if (onEnterPage[page]) onEnterPage[page]();
 }
 

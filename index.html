@@ -124,7 +124,12 @@
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:col-span-2 flex flex-col">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                         <h2 class="font-bold text-slate-800 flex items-center gap-2">🚨 กำหนดนัดหมายสำคัญที่กำลังจะถึง</h2>
-                        <span class="bg-red-50 text-red-600 text-xs px-2.5 py-1 rounded-full font-medium border border-red-100">เรียลไทม์</span>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="btnOpenCalendar" class="text-xs bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-3 py-1.5 rounded-lg font-semibold transition-colors">
+                                📅 ดูแบบปฏิทิน
+                            </button>
+                            <span class="bg-red-50 text-red-600 text-xs px-2.5 py-1 rounded-full font-medium border border-red-100">เรียลไทม์</span>
+                        </div>
                     </div>
                     <div class="overflow-x-auto flex-1">
                         <table class="w-full text-left text-sm">
@@ -141,6 +146,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="deadlinePager" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-slate-100 pt-3 mt-3"></div>
                 </div>
 
                 <!-- สถิติคดี + เมนู -->
@@ -235,6 +241,9 @@
         <div id="contactsPage" class="hidden">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-5 border-b border-slate-200 mb-6 gap-4">
                 <div>
+                    <button type="button" id="btnBackFromContacts" class="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg px-3 py-1.5 mb-3 transition-colors">
+                        ⬅️ กลับหน้าแรก
+                    </button>
                     <h1 class="text-2xl font-bold text-slate-900">📞 สมุดรายชื่อผู้ติดต่อ</h1>
                     <p class="text-sm text-slate-500 mt-1">จัดการข้อมูลลูกความ พยาน และบุคคลที่เกี่ยวข้องกับคดีความ</p>
                 </div>
@@ -263,6 +272,9 @@
         <!-- ==================== หน้าจัดการผู้ใช้งาน (admin/partner เท่านั้น) ==================== -->
         <div id="adminPage" class="hidden space-y-6">
             <div>
+                <button type="button" id="btnBackFromAdmin" class="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg px-3 py-1.5 mb-3 transition-colors">
+                    ⬅️ กลับหน้าแรก
+                </button>
                 <h1 class="text-2xl font-bold text-slate-900">🛠️ จัดการผู้ใช้งาน</h1>
                 <p class="text-sm text-slate-500 mt-1">เชิญผู้ใช้ใหม่ ปรับบทบาท และดึงผู้ใช้ที่สมัครเองเข้าสำนักงาน</p>
             </div>
@@ -275,12 +287,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <input type="email" id="invite_email" required placeholder="อีเมลผู้ถูกเชิญ"
                                 class="sm:col-span-2 bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
-                            <select id="invite_role" class="bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500">
-                                <option value="lawyer">ทนายความ</option>
-                                <option value="paralegal">ผู้ช่วยทนายความ</option>
-                                <option value="partner">หุ้นส่วนสำนักงาน</option>
-                                <option value="admin">ผู้ดูแลระบบ</option>
-                            </select>
+                            <select id="invite_role" class="bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500"></select>
                         </div>
                         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors">
                             ส่งคำเชิญ
@@ -309,6 +316,33 @@
                     จนกว่าจะถูกดึงเข้าสำนักงานและกำหนดบทบาทที่นี่
                 </p>
                 <div id="unclaimedList" class="border border-slate-100 rounded-lg max-h-64 overflow-y-auto"></div>
+            </div>
+
+            <!-- ออกรหัสยืนยันการลบคดี (เฉพาะผู้ดูแลระบบ) -->
+            <div id="deletionCodeSection" class="hidden bg-white rounded-xl shadow-sm border border-red-200 p-5">
+                <h2 class="font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4">🔑 ออกรหัสยืนยันการลบคดี (สำหรับผู้ช่วยผู้ดูแลระบบ/เลขา)</h2>
+                <p class="text-xs text-slate-500 mb-3">
+                    ผู้ช่วยผู้ดูแลระบบ/เลขาลบคดีได้เฉพาะเมื่อมีรหัสนี้ — รหัสผูกกับคดีเดียว ใช้ได้ครั้งเดียว และหมดอายุใน 15 นาที
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                    <input type="text" id="deletion_case_filter" placeholder="🔍 พิมพ์ค้นหาคดี (เลขดำ/ศาล/ชื่อคู่ความ)"
+                        class="bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" />
+                    <select id="deletion_case_select" class="sm:col-span-2 bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500"></select>
+                </div>
+                <button type="button" id="btnGenerateDeletionCode" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">
+                    ออกรหัสยืนยันการลบ
+                </button>
+                <div id="deletionCodeResult" class="hidden mt-4 bg-red-50 border border-red-100 rounded-lg p-4 text-center">
+                    <div id="deletionCodeValue" class="font-mono text-3xl font-bold tracking-widest text-red-700"></div>
+                    <div id="deletionCodeExpiry" class="text-xs text-slate-500 mt-1"></div>
+                    <button type="button" id="btnCopyDeletionCode" class="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium">📋 คัดลอกรหัส</button>
+                </div>
+            </div>
+
+            <!-- ประวัติการลบคดี -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <h2 class="font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4">🗑️ ประวัติการลบคดีล่าสุด</h2>
+                <div id="deletionHistoryList" class="border border-slate-100 rounded-lg max-h-64 overflow-y-auto"></div>
             </div>
         </div>
     </main>
@@ -691,6 +725,60 @@
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow">บันทึกรายชื่อ</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: ปฏิทินนัดหมาย ==================== -->
+    <div id="calendarModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-4xl max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4 sticky top-0 bg-white z-10">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">📅 ปฏิทินนัดหมายที่ยังมาไม่ถึง</h3>
+                    <p id="calendarSummary" class="text-xs text-slate-500"></p>
+                </div>
+                <button type="button" id="btnCloseCalendar" class="text-slate-400 hover:text-slate-600 text-2xl font-semibold">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="btnCalendarPrev" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">‹</button>
+                        <button type="button" id="btnCalendarNext" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white hover:bg-slate-50">›</button>
+                        <button type="button" id="btnCalendarToday" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100">เดือนนี้</button>
+                    </div>
+                    <h4 id="calendarMonthLabel" class="text-base font-bold text-slate-800"></h4>
+                </div>
+                <div id="calendarGrid" class="grid grid-cols-7 border-t border-l border-slate-200 rounded-lg overflow-hidden"></div>
+                <div id="calendarDayDetail" class="bg-slate-50 border border-slate-200 rounded-lg p-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: ลบคดีออกจากระบบ ==================== -->
+    <div id="deleteCaseModal" class="fixed inset-0 z-[60] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-red-200 w-full max-w-md overflow-hidden">
+            <div class="flex items-center justify-between bg-red-600 text-white px-6 py-4">
+                <h3 class="text-lg font-bold">🗑️ ลบคดีออกจากระบบ</h3>
+                <button type="button" id="btnCloseDeleteModal" class="text-red-100 hover:text-white text-2xl font-semibold">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                    <div id="delete_case_summary" class="text-sm font-semibold text-slate-800"></div>
+                    <div id="delete_case_parties" class="text-xs text-slate-500 mt-0.5"></div>
+                </div>
+                <p class="text-xs text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2 leading-relaxed">
+                    ⚠️ การลบจะนำคดีนี้พร้อมนัดหมาย รายชื่อคู่ความ และไฟล์แนบทั้งหมดออกจากระบบอย่างถาวร
+                    ใช้เฉพาะกรณีบันทึกคดีซ้ำหรือผิดพลาดเท่านั้น (ระบบจะเก็บประวัติการลบไว้เพื่อตรวจสอบย้อนหลัง)
+                </p>
+                <div id="deleteCodeBlock" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">รหัสยืนยันการลบ (ขอจากผู้ดูแลระบบ) *</label>
+                    <input type="text" id="delete_code_input" autocomplete="off" placeholder="XXXX-XXXX"
+                        class="w-full bg-slate-50 border border-slate-200 text-lg font-mono tracking-widest text-center uppercase rounded-lg px-3 py-2.5 focus:outline-none focus:border-red-500" />
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" id="btnCancelDeleteModal" class="text-sm font-medium text-slate-500 hover:text-slate-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+                    <button type="button" id="btnConfirmDelete" class="bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors">ยืนยันลบคดีถาวร</button>
+                </div>
+            </div>
         </div>
     </div>
 

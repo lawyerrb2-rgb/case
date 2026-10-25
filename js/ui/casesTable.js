@@ -10,16 +10,18 @@
 import { listCases } from "../api/cases.js";
 import { listAllSchedulesForCaseMapping } from "../api/schedules.js";
 import { state } from "../state.js";
-import { getStatusMeta } from "../config.js";
+import { getStatusMeta, canRequestCaseDeletion } from "../config.js";
 import { escapeHtml, formatCurrency, formatDateTimeTH } from "../utils.js";
 
 let onEditRequested = () => {};
 let onViewRequested = () => {};
+let onDeleteRequested = () => {};
 
 /** เรียกครั้งเดียวตอน bootstrap เพื่อผูก callback เข้ากับปุ่มแก้ไข/เปิดดูของแต่ละแถว */
-export function initCasesTable({ onEdit, onView }) {
+export function initCasesTable({ onEdit, onView, onDelete }) {
   onEditRequested = onEdit;
   onViewRequested = onView;
+  onDeleteRequested = onDelete;
 
   const tbody = document.getElementById("caseTableBody");
   tbody.addEventListener("click", (e) => {
@@ -29,6 +31,7 @@ export function initCasesTable({ onEdit, onView }) {
     if (!row) return;
     if (btn.dataset.action === "edit") onEditRequested(row);
     if (btn.dataset.action === "view") onViewRequested(row);
+    if (btn.dataset.action === "delete") onDeleteRequested(row);
   });
 
   document.getElementById("btnPrevPage").addEventListener("click", () => changePage(-1));
@@ -58,6 +61,12 @@ export async function refreshCasesTable() {
       pageSize,
       assignedTo: assignedToMe ? state.currentUser.userId : null,
     });
+
+    // หน้าปัจจุบันว่างเปล่าแต่ยังมีคดีในหน้าก่อนหน้า (เช่น เพิ่งลบคดีสุดท้ายของหน้า) → ถอยกลับ 1 หน้า
+    if (cases.length === 0 && totalCount > 0 && currentPage > 1) {
+      state.cases.currentPage = currentPage - 1;
+      return refreshCasesTable();
+    }
 
     state.cases.rows = cases;
     updatePaginationUI(currentPage, pageSize, totalCount);
@@ -123,6 +132,14 @@ function renderCaseRow(c, index, allSchedules) {
           class="text-xs bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 px-2 py-1.5 rounded-lg font-medium transition-colors">
           📝 แก้ไข
         </button>
+        ${
+          canRequestCaseDeletion(state.currentUser.role)
+            ? `<button type="button" data-action="delete" data-index="${index}"
+          class="text-xs bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 px-2 py-1.5 rounded-lg font-medium transition-colors">
+          🗑️ ลบ
+        </button>`
+            : ""
+        }
       </td>
     </tr>`;
 }

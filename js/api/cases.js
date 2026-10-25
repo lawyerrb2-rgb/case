@@ -75,3 +75,17 @@ export async function updateCaseStatus(caseId, newStatus) {
   const { error } = await supabaseClient.from("cases").update({ case_status: newStatus }).eq("case_id", caseId);
   if (error) throw error;
 }
+
+/**
+ * ลบคดีผ่าน RPC delete_case() (sql/009) — ช่องทางเดียวที่ลบได้
+ * admin ลบได้เลย / secretary ต้องส่งรหัสยืนยันที่ admin ออกให้
+ * คืนค่า path ของไฟล์แนบที่ต้องลบออกจาก Storage ต่อ
+ */
+export async function deleteCase(caseId, confirmationCode = null) {
+  const { data, error } = await supabaseClient.rpc("delete_case", {
+    p_case_id: caseId,
+    p_code: confirmationCode,
+  });
+  if (error) throw error;
+  return data || [];
+}

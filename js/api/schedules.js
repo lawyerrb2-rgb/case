@@ -3,16 +3,34 @@
 // =============================================================
 import { supabaseClient } from "../config.js";
 
-/** นัดหมายที่ยังไม่ถึงและยังไม่เสร็จสิ้น เรียงใกล้สุดก่อน ใช้กับแดชบอร์ด */
-export async function listUpcomingSchedules(limit = 5) {
-  const todayIso = new Date().toISOString();
-  const { data, error } = await supabaseClient
+/**
+ * นัดหมายทั้งหมดที่ยังมาไม่ถึงและยังไม่เสร็จสิ้น เรียงใกล้สุดก่อน แบ่งหน้า
+ * (ใช้กับกล่อง "กำหนดนัดหมายสำคัญที่กำลังจะถึง" บนแดชบอร์ด)
+ */
+export async function listUpcomingSchedulesPaged({ page = 1, pageSize = 5 } = {}) {
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const { data, error, count } = await supabaseClient
     .from("schedules")
-    .select(`event_date, event_type, case_id, cases ( black_number, red_number, court_name )`)
-    .gte("event_date", todayIso)
+    .select(`event_date, event_type, case_id, cases ( black_number, red_number, court_name )`, { count: "exact" })
+    .gte("event_date", new Date().toISOString())
     .eq("is_completed", false)
     .order("event_date", { ascending: true })
-    .limit(limit);
+    .range(from, to);
+  if (error) throw error;
+  return { schedules: data || [], totalCount: count || 0 };
+}
+
+/** นัดหมายที่ยังมาไม่ถึงภายในช่วงเวลาที่กำหนด (ใช้กับมุมมองปฏิทินรายเดือน) */
+export async function listUpcomingSchedulesInRange(startIso, endIso) {
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabaseClient
+    .from("schedules")
+    .select(`event_id, event_date, event_type, notes, case_id, cases ( black_number, red_number, court_name )`)
+    .gte("event_date", startIso > nowIso ? startIso : nowIso)
+    .lt("event_date", endIso)
+    .eq("is_completed", false)
+    .order("event_date", { ascending: true });
   if (error) throw error;
   return data || [];
 }

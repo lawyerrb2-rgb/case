@@ -14,7 +14,7 @@ import { listActivityForCase } from "../api/activityLog.js";
 import { listOrgMembers } from "../api/members.js";
 import { uploadCaseDocument, listCaseDocuments, getSignedDownloadUrl, deleteCaseDocument } from "../api/documents.js";
 import { state } from "../state.js";
-import { getStatusMeta, getContactRoleMeta, canCloseCase, isAdminOrPartner } from "../config.js";
+import { getStatusMeta, getContactRoleMeta, canCloseCase } from "../config.js";
 import { escapeHtml, formatDateTimeTH, isoToDateTimeLocalValue, showToast, getFormValue } from "../utils.js";
 import { refreshCasesTable } from "./casesTable.js";
 import { renderMetrics, renderUpcomingSchedules } from "./dashboard.js";

@@ -122,17 +122,25 @@ export function getContactRoleMeta(roleKey) {
 // ห้ามพึ่งพาชั้นนี้เพียงอย่างเดียวเพื่อความปลอดภัย
 export const USER_ROLES = {
   admin: "ผู้ดูแลระบบ",
+  secretary: "ผู้ช่วยผู้ดูแลระบบ/เลขา",
   partner: "หุ้นส่วนสำนักงาน",
   lawyer: "ทนายความ",
   paralegal: "ผู้ช่วยทนายความ",
 };
 
-// เฉพาะ admin/partner เท่านั้นที่ปิดสำนวนคดีถาวรได้ (สอดคล้องกับ RLS policy
-// "cases_update_same_org" ที่บล็อกการตั้ง case_status = 'Closed' จากบทบาทอื่น)
-export function canCloseCase(role) {
-  return role === "admin" || role === "partner";
+// "admin-like" = บทบาทที่จัดการผู้ใช้/ปิดสำนวนคดีได้ (admin, secretary, partner)
+// หมายเหตุ: secretary มีอำนาจเท่า admin ทุกอย่าง ยกเว้น (1) ตั้ง/แก้ role admin
+// และ (2) ลบคดี ซึ่งต้องใช้รหัสยืนยันที่ admin ออกให้ (บังคับที่ฐานข้อมูล —
+// sql/009_secretary_role_and_case_deletion.sql)
+export function isAdminLike(role) {
+  return role === "admin" || role === "secretary" || role === "partner";
 }
 
-export function isAdminOrPartner(role) {
-  return role === "admin" || role === "partner";
+export function canCloseCase(role) {
+  return isAdminLike(role);
+}
+
+/** admin ลบคดีได้เลย / secretary ลบได้เมื่อมีรหัสยืนยันจาก admin */
+export function canRequestCaseDeletion(role) {
+  return role === "admin" || role === "secretary";
 }

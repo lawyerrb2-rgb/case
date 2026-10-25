@@ -7,14 +7,24 @@
 // ปฏิเสธคำสั่งที่ฐานข้อมูลอยู่ดี
 import { listInvites, createInvite, revokeInvite } from "../api/invites.js";
 import { listOrgMembers, listUnclaimedProfiles, updateMemberRole, claimProfileIntoOrg } from "../api/members.js";
+import { listAllCasesLite } from "../api/cases.js";
+import { createDeletionCode, listCaseDeletions } from "../api/deletions.js";
 import { state } from "../state.js";
 import { USER_ROLES } from "../config.js";
 import { escapeHtml, showToast, formatDateTimeTH, getFormValue } from "../utils.js";
 
-const ASSIGNABLE_ROLES = ["admin", "partner", "lawyer", "paralegal"];
+const ALL_ROLES = ["admin", "secretary", "partner", "lawyer", "paralegal"];
+
+const isAdmin = () => state.currentUser.role === "admin";
+
+// เฉพาะ admin เท่านั้นที่ตั้ง/แก้ role "ผู้ดูแลระบบ" ได้ (บังคับที่ RLS ด้วย) —
+// secretary/partner จึงไม่เห็นตัวเลือกนี้ เพื่อกันเลื่อนขั้นตัวเองไปเป็น admin
+function assignableRoles() {
+  return isAdmin() ? ALL_ROLES : ALL_ROLES.filter((r) => r !== "admin");
+}
 
 function roleOptionsHtml(selectedRole) {
-  return ASSIGNABLE_ROLES.map(
+  return assignableRoles().map(
     (r) => `<option value="${r}" ${r === selectedRole ? "selected" : ""}>${escapeHtml(USER_ROLES[r])}</option>`
   ).join("");
 }
@@ -24,10 +34,31 @@ export function initAdminPage() {
   document.getElementById("invitesList").addEventListener("click", handleInvitesListClick);
   document.getElementById("membersList").addEventListener("change", handleMemberRoleChange);
   document.getElementById("unclaimedList").addEventListener("click", handleUnclaimedClick);
+  document.getElementById("btnGenerateDeletionCode").addEventListener("click", handleGenerateDeletionCode);
+  document.getElementById("deletion_case_filter").addEventListener("input", renderDeletionCaseOptions);
+  document.getElementById("btnCopyDeletionCode").addEventListener("click", async () => {
+    const code = document.getElementById("deletionCodeValue").dataset.rawCode;
+    try {
+      await navigator.clipboard.writeText(code);
+      showToast("📋 คัดลอกรหัสแล้ว");
+    } catch {
+      showToast("⚠️ คัดลอกไม่สำเร็จ กรุณาจดรหัสด้วยตนเอง", "error");
+    }
+  });
 }
 
 export async function refreshAdminPage() {
-  await Promise.all([renderInvites(), renderMembers(), renderUnclaimed()]);
+  document.getElementById("invite_role").innerHTML = roleOptionsHtml("lawyer");
+  // ส่วนออกรหัสยืนยันการลบ — เฉพาะ admin เท่านั้น
+  document.getElementById("deletionCodeSection").classList.toggle("hidden", !isAdmin());
+
+  await Promise.all([
+    renderInvites(),
+    renderMembers(),
+    renderUnclaimed(),
+    renderDeletionHistory(),
+    isAdmin() ? loadDeletionCaseOptions() : Promise.resolve(),
+  ]);
 }
 
 // -------------------------------------------------------------
@@ -105,15 +136,20 @@ async function renderMembers() {
   try {
     const members = await listOrgMembers();
     container.innerHTML = members
-      .map(
-        (m) => `
+      .map((m) => {
+        const locked = m.role === "admin" && !isAdmin();
+        return `
           <div class="flex items-center justify-between px-3 py-2 border-b border-slate-100 text-sm last:border-0">
             <span class="font-medium text-slate-800">${escapeHtml(m.full_name)}</span>
-            <select data-member-role="${m.user_id}" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500">
-              ${roleOptionsHtml(m.role)}
-            </select>
-          </div>`
-      )
+            ${
+              locked
+                ? `<span class="text-xs px-2 py-1 rounded-lg bg-slate-100 text-slate-500">${escapeHtml(USER_ROLES.admin)}</span>`
+                : `<select data-member-role="${m.user_id}" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500">
+                    ${roleOptionsHtml(m.role)}
+                  </select>`
+            }
+          </div>`;
+      })
       .join("");
   } catch (err) {
     container.innerHTML = `<p class="text-xs text-red-500 py-2">❌ โหลดสมาชิกล้มเหลว: ${escapeHtml(err.message)}</p>`;
@@ -184,5 +220,88 @@ async function handleUnclaimedClick(e) {
     await Promise.all([renderUnclaimed(), renderMembers()]);
   } catch (err) {
     showToast("❌ ดึงผู้ใช้ไม่สำเร็จ: " + err.message, "error");
+  }
+}
+
+// -------------------------------------------------------------
+// ออกรหัสยืนยันการลบคดี (เฉพาะ admin) — ให้ secretary นำไปกรอกตอนลบคดี
+// -------------------------------------------------------------
+let deletionCaseOptions = [];
+
+async function loadDeletionCaseOptions() {
+  try {
+    deletionCaseOptions = await listAllCasesLite();
+    renderDeletionCaseOptions();
+  } catch (err) {
+    showToast("❌ โหลดรายการคดีไม่สำเร็จ: " + err.message, "error");
+  }
+}
+
+function renderDeletionCaseOptions() {
+  const keyword = document.getElementById("deletion_case_filter").value.trim().toLowerCase();
+  const select = document.getElementById("deletion_case_select");
+  const filtered = deletionCaseOptions.filter((c) =>
+    [c.black_number, c.red_number, c.court_name, c.plaintiff_name, c.defendant_name]
+      .some((v) => v && String(v).toLowerCase().includes(keyword))
+  );
+  select.innerHTML =
+    filtered.length === 0
+      ? `<option value="">ไม่พบคดีที่ตรงกับคำค้นหา</option>`
+      : filtered
+          .map(
+            (c) =>
+              `<option value="${escapeHtml(c.case_id)}">ดำ: ${escapeHtml(c.black_number)} (${escapeHtml(c.court_name)}) — ${escapeHtml(c.plaintiff_name || "ไม่ระบุ")} v ${escapeHtml(c.defendant_name || "ไม่ระบุ")}</option>`
+          )
+          .join("");
+}
+
+async function handleGenerateDeletionCode() {
+  const caseId = getFormValue("deletion_case_select");
+  if (!caseId) {
+    showToast("⚠️ กรุณาเลือกคดีที่ต้องการออกรหัสลบ", "error");
+    return;
+  }
+  try {
+    const { code, expiresAt } = await createDeletionCode(caseId);
+    const { time } = formatDateTimeTH(expiresAt);
+    const valueEl = document.getElementById("deletionCodeValue");
+    valueEl.dataset.rawCode = code;
+    valueEl.textContent = `${code.slice(0, 4)}-${code.slice(4)}`;
+    document.getElementById("deletionCodeExpiry").textContent = `ใช้ได้ครั้งเดียว หมดอายุเวลา ${time}`;
+    document.getElementById("deletionCodeResult").classList.remove("hidden");
+  } catch (err) {
+    showToast("❌ ออกรหัสไม่สำเร็จ: " + err.message, "error");
+  }
+}
+
+// -------------------------------------------------------------
+// ประวัติการลบคดี (audit) — admin/secretary/partner ดูได้
+// -------------------------------------------------------------
+async function renderDeletionHistory() {
+  const container = document.getElementById("deletionHistoryList");
+  container.innerHTML = `<p class="text-xs text-slate-400 py-2">⏳ กำลังโหลด...</p>`;
+  try {
+    const rows = await listCaseDeletions(20);
+    if (rows.length === 0) {
+      container.innerHTML = `<p class="text-xs text-slate-400 py-2">ยังไม่มีประวัติการลบคดี</p>`;
+      return;
+    }
+    container.innerHTML = rows
+      .map((r) => {
+        const { date, time } = formatDateTimeTH(r.deleted_at);
+        const approvedNote =
+          r.approved_by_name && r.approved_by_name !== r.deleted_by_name
+            ? ` · อนุมัติโดย <b>${escapeHtml(r.approved_by_name)}</b>`
+            : "";
+        return `
+          <div class="px-3 py-2 border-b border-slate-100 text-xs text-slate-600 last:border-0">
+            <span class="font-mono text-slate-400">${date} ${time}</span>
+            — คดีดำ <b>${escapeHtml(r.black_number || "—")}</b> (${escapeHtml(r.court_name || "—")})
+            ลบโดย <b>${escapeHtml(r.deleted_by_name || "ไม่ทราบ")}</b>${approvedNote}
+          </div>`;
+      })
+      .join("");
+  } catch (err) {
+    container.innerHTML = `<p class="text-xs text-red-500 py-2">❌ โหลดประวัติล้มเหลว: ${escapeHtml(err.message)}</p>`;
   }
 }

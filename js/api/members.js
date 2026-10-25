@@ -25,15 +25,19 @@ export async function listUnclaimedProfiles() {
 }
 
 export async function updateMemberRole(userId, role) {
-  const { error } = await supabaseClient.from("profiles").update({ role }).eq("user_id", userId);
+  const { data, error } = await supabaseClient.from("profiles").update({ role }).eq("user_id", userId).select("user_id");
   if (error) throw error;
+  // RLS ที่ปฏิเสธการแก้ไขจะไม่ throw แต่ส่งกลับ 0 แถว — ต้องตรวจเองไม่งั้นจะดูเหมือนสำเร็จทั้งที่ไม่ได้เปลี่ยน
+  if (!data || data.length === 0) throw new Error("ไม่มีสิทธิ์เปลี่ยนบทบาทของผู้ใช้นี้");
 }
 
 /** ดึงผู้ใช้ที่ organization_id เป็น null เข้าสำนักงานตัวเอง พร้อมกำหนดบทบาท */
 export async function claimProfileIntoOrg(userId, organizationId, role) {
-  const { error } = await supabaseClient
+  const { data, error } = await supabaseClient
     .from("profiles")
     .update({ organization_id: organizationId, role })
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("user_id");
   if (error) throw error;
+  if (!data || data.length === 0) throw new Error("ไม่มีสิทธิ์ดึงผู้ใช้นี้เข้าสำนักงาน");
 }

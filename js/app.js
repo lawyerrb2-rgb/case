@@ -2,9 +2,11 @@
 // app.js — จุดเริ่มต้นของแอป: ผูก event ทั้งหมด แล้วโหลดข้อมูลครั้งแรก
 // =============================================================
 import { state } from "./state.js";
-import { PAGE_SIZE, isAdminOrPartner } from "./config.js";
+import { PAGE_SIZE, isAdminLike } from "./config.js";
 import { debounce } from "./utils.js";
-import { renderMetrics, renderUpcomingSchedules } from "./ui/dashboard.js";
+import { renderMetrics, renderUpcomingSchedules, initUpcomingSchedulesPager } from "./ui/dashboard.js";
+import { initCalendar } from "./ui/calendar.js";
+import { initDeleteCaseModal, openDeleteCaseModal } from "./ui/deleteCase.js";
 import { initCasesTable, refreshCasesTable, resetToFirstPage } from "./ui/casesTable.js";
 import {
   toggleCaseModal,
@@ -80,6 +82,9 @@ function wireSidebarNav() {
     e.preventDefault();
     switchPage("admin");
   });
+  // ปุ่มย้อนกลับหน้าแรกจากหน้าสมุดรายชื่อ/หน้าจัดการผู้ใช้งาน
+  document.getElementById("btnBackFromContacts").addEventListener("click", () => switchPage("cases"));
+  document.getElementById("btnBackFromAdmin").addEventListener("click", () => switchPage("cases"));
   document.getElementById("btnAddCase").addEventListener("click", () => toggleCaseModal(true));
   document.getElementById("btnAddSchedule").addEventListener("click", () => toggleScheduleModal(true));
   document.getElementById("btnUpdateStatus").addEventListener("click", () => toggleStatusModal(true));
@@ -142,7 +147,10 @@ function initAppOnce() {
   wireViewModal();
   wireContactModal();
 
-  initCasesTable({ onEdit: openEditModal, onView: openViewModal });
+  initCasesTable({ onEdit: openEditModal, onView: openViewModal, onDelete: openDeleteCaseModal });
+  initUpcomingSchedulesPager();
+  initCalendar();
+  initDeleteCaseModal();
   initContacts();
   initAdminPage();
 
@@ -189,7 +197,7 @@ async function handleAuthenticatedSession(session) {
     renderUserBadge(state.currentUser);
     showAppShell();
     initAppOnce();
-    if (isAdminOrPartner(profile.role)) revealAdminMenuItem();
+    if (isAdminLike(profile.role)) revealAdminMenuItem();
     await loadWorkspaceData();
   } catch (err) {
     console.error("โหลดโปรไฟล์ผู้ใช้ไม่สำเร็จ:", err.message);

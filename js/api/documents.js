@@ -51,3 +51,10 @@ export async function deleteCaseDocument(documentId, filePath) {
   const { error: rowError } = await supabaseClient.from("case_documents").delete().eq("document_id", documentId);
   if (rowError) throw rowError;
 }
+
+/** ลบไฟล์ใน Storage หลังคดีถูกลบแล้ว (ใช้ path ที่ delete_case() คืนมา) */
+export async function removeStorageFiles(paths) {
+  if (!paths || paths.length === 0) return;
+  const { error } = await supabaseClient.storage.from(DOCUMENTS_BUCKET).remove(paths);
+  if (error) throw error;
+}

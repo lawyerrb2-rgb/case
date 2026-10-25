@@ -24,6 +24,10 @@ export const state = {
     assignedToMe: false,
     rows: [], // แคชผลลัพธ์หน้าปัจจุบัน ใช้ตอนกดปุ่ม "แก้ไข/เปิดดู" ในแถว
   },
+  schedules: {
+    page: 1,
+    pageSize: 5, // นัดหมายที่กำลังจะถึง แสดงหน้าละ 5 รายการบนแดชบอร์ด
+  },
   statusModal: {
     allCasesLite: [], // แคชคดีทั้งหมดไว้ค้นหาแบบพิมพ์กรองสด (client-side filter)
   },
