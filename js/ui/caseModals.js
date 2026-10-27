@@ -15,7 +15,7 @@ import { listOrgMembers } from "../api/members.js";
 import { uploadCaseDocument, listCaseDocuments, getSignedDownloadUrl, deleteCaseDocument } from "../api/documents.js";
 import { state } from "../state.js";
 import { getStatusMeta, getContactRoleMeta, canCloseCase } from "../config.js";
-import { escapeHtml, formatDateTimeTH, isoToDateTimeLocalValue, showToast, getFormValue } from "../utils.js";
+import { escapeHtml, formatPersonName, formatDateTimeTH, isoToDateTimeLocalValue, showToast, getFormValue } from "../utils.js";
 import { refreshCasesTable } from "./casesTable.js";
 import { renderMetrics, renderUpcomingSchedules } from "./dashboard.js";
 
@@ -32,7 +32,7 @@ async function populateAssignedLawyerOptions(selectId, selectedUserId) {
   try {
     const members = await listOrgMembers();
     select.innerHTML = members
-      .map((m) => `<option value="${m.user_id}" ${m.user_id === selectedUserId ? "selected" : ""}>${escapeHtml(m.full_name)}</option>`)
+      .map((m) => `<option value="${m.user_id}" ${m.user_id === selectedUserId ? "selected" : ""}>${escapeHtml(formatPersonName(m))}</option>`)
       .join("");
   } catch (err) {
     console.error("โหลดรายชื่อทนายความไม่สำเร็จ:", err.message);

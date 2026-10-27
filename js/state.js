@@ -15,6 +15,10 @@ export const state = {
     organizationId: null,
     role: null,
     fullName: null,
+    firstName: null,
+    lastName: null,
+    nickname: null,
+    email: null,
   },
   cases: {
     currentPage: 1,

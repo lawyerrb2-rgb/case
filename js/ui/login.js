@@ -22,8 +22,9 @@ export function showAppShell() {
   document.getElementById("appShell").classList.remove("hidden");
 }
 
-export function renderUserBadge({ fullName, role }) {
-  document.getElementById("userBadgeName").textContent = fullName || "";
+export function renderUserBadge({ fullName, nickname, role }) {
+  // แสดงชื่อ (ไม่ใช่อีเมล) มุมขวาบน — ผู้ใช้ที่ยังไม่กรอกชื่อจะเห็นอีเมลชั่วคราวจนกว่าจะกรอก
+  document.getElementById("userBadgeName").textContent = nickname ? `${fullName} (${nickname})` : fullName || "";
   document.getElementById("userBadgeRole").textContent = USER_ROLES[role] || role || "";
 }
 
@@ -86,12 +87,14 @@ export function initSignupForm(onLoginSuccess) {
     submitBtn.disabled = true;
     submitBtn.textContent = "กำลังสมัครสมาชิก...";
 
-    const fullName = document.getElementById("signup_full_name").value.trim();
+    const firstName = document.getElementById("signup_first_name").value.trim();
+    const lastName = document.getElementById("signup_last_name").value.trim();
+    const nickname = document.getElementById("signup_nickname").value.trim();
     const email = document.getElementById("signup_email").value.trim();
     const password = document.getElementById("signup_password").value;
 
     try {
-      const session = await signUpWithPassword(email, password, fullName);
+      const session = await signUpWithPassword({ email, password, firstName, lastName, nickname });
       if (session) {
         // บาง Supabase project ปิด "Confirm email" ไว้ ทำให้ signUp ได้ session
         // ทันที — พาเข้าแอปเลยโดยไม่ต้องรอยืนยันอีเมล

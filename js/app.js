@@ -30,6 +30,8 @@ import {
 import { initContacts, refreshContactsTable, toggleContactModal, handleSaveContact } from "./ui/contacts.js";
 import { switchPage, registerPageRefresh, revealAdminMenuItem } from "./ui/router.js";
 import { initAdminPage, refreshAdminPage } from "./ui/admin.js";
+import { initProfileModal, openProfileModal } from "./ui/profile.js";
+import { isProfileNameMissing } from "./utils.js";
 import { getCurrentSession, fetchMyProfile, onAuthStateChange } from "./api/auth.js";
 import {
   showLoginScreen,
@@ -153,6 +155,9 @@ function initAppOnce() {
   initDeleteCaseModal();
   initContacts();
   initAdminPage();
+  initProfileModal(async () => {
+    await refreshCasesTable();
+  });
 
   registerPageRefresh("contacts", refreshContactsTable);
   registerPageRefresh("admin", refreshAdminPage);
@@ -175,7 +180,7 @@ async function loadWorkspaceData() {
  */
 async function handleAuthenticatedSession(session) {
   if (!session) {
-    state.currentUser = { userId: null, organizationId: null, role: null, fullName: null };
+    state.currentUser = { userId: null, organizationId: null, role: null, fullName: null, firstName: null, lastName: null, nickname: null, email: null };
     showLoginScreen();
     return;
   }
@@ -187,6 +192,10 @@ async function handleAuthenticatedSession(session) {
       organizationId: profile.organization_id,
       role: profile.role,
       fullName: profile.full_name,
+      firstName: profile.first_name,
+      lastName: profile.last_name,
+      nickname: profile.nickname,
+      email: profile.email || session.user.email,
     };
 
     if (profile.role === "pending" || !profile.organization_id) {
@@ -198,6 +207,8 @@ async function handleAuthenticatedSession(session) {
     showAppShell();
     initAppOnce();
     if (isAdminLike(profile.role)) revealAdminMenuItem();
+    // ยังไม่มีชื่อจริง/นามสกุล → บังคับกรอกก่อนใช้งานต่อ (โหมด required ปิดไม่ได้)
+    if (isProfileNameMissing(profile)) openProfileModal({ required: true });
     await loadWorkspaceData();
   } catch (err) {
     console.error("โหลดโปรไฟล์ผู้ใช้ไม่สำเร็จ:", err.message);

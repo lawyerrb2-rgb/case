@@ -21,11 +21,12 @@ export async function signInWithPassword(email, password) {
  * คืนค่า session ถ้าโปรเจกต์ปิด "Confirm email" ไว้ (ได้ session ทันที)
  * หรือ null ถ้าต้องรอกดยืนยันจากอีเมลก่อน
  */
-export async function signUpWithPassword(email, password, fullName) {
+export async function signUpWithPassword({ email, password, firstName, lastName, nickname }) {
   const { data, error } = await supabaseClient.auth.signUp({
     email,
     password,
-    options: { data: { full_name: fullName } },
+    // trigger handle_new_auth_user (sql/010) อ่านค่าเหล่านี้ไปสร้างโปรไฟล์
+    options: { data: { first_name: firstName, last_name: lastName, nickname: nickname || null } },
   });
   if (error) throw error;
   return data.session;
@@ -49,14 +50,14 @@ export function onAuthStateChange(callback) {
 }
 
 /**
- * ดึงโปรไฟล์ (organization_id, role, full_name) ของผู้ใช้ที่ login อยู่
+ * ดึงโปรไฟล์ (สำนักงาน, บทบาท, ชื่อ-นามสกุล, ชื่อเล่น, อีเมล) ของผู้ใช้ที่ login อยู่
  * แถวนี้ถูกสร้างอัตโนมัติตอนสมัครสมาชิกโดย trigger handle_new_auth_user()
  * (ดู sql/001_multi_tenant_schema.sql ข้อ 5)
  */
 export async function fetchMyProfile(userId) {
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("user_id, organization_id, role, full_name")
+    .select("user_id, organization_id, role, full_name, first_name, last_name, nickname, email")
     .eq("user_id", userId)
     .single();
   if (error) throw error;

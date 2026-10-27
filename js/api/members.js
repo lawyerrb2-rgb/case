@@ -7,7 +7,7 @@ import { supabaseClient } from "../config.js";
 export async function listOrgMembers() {
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("user_id, full_name, role")
+    .select("user_id, full_name, first_name, last_name, nickname, email, role")
     .order("full_name", { ascending: true });
   if (error) throw error;
   return data || [];
@@ -17,7 +17,7 @@ export async function listOrgMembers() {
 export async function listUnclaimedProfiles() {
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("user_id, full_name, created_at")
+    .select("user_id, full_name, first_name, last_name, nickname, email, created_at")
     .is("organization_id", null)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -40,4 +40,16 @@ export async function claimProfileIntoOrg(userId, organizationId, role) {
     .select("user_id");
   if (error) throw error;
   if (!data || data.length === 0) throw new Error("ไม่มีสิทธิ์ดึงผู้ใช้นี้เข้าสำนักงาน");
+}
+
+/** ผู้ใช้แก้ชื่อจริง/นามสกุล/ชื่อเล่นของตัวเอง (full_name ถูกประกอบใหม่โดย trigger ในฐานข้อมูล) */
+export async function updateMyProfile(userId, { firstName, lastName, nickname }) {
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .update({ first_name: firstName, last_name: lastName, nickname: nickname || null })
+    .eq("user_id", userId)
+    .select("user_id, full_name, first_name, last_name, nickname, email")
+    .single();
+  if (error) throw error;
+  return data;
 }

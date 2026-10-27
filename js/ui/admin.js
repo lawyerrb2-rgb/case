@@ -11,7 +11,7 @@ import { listAllCasesLite } from "../api/cases.js";
 import { createDeletionCode, listCaseDeletions } from "../api/deletions.js";
 import { state } from "../state.js";
 import { USER_ROLES } from "../config.js";
-import { escapeHtml, showToast, formatDateTimeTH, getFormValue } from "../utils.js";
+import { escapeHtml, showToast, formatDateTimeTH, getFormValue, formatPersonName, isProfileNameMissing } from "../utils.js";
 
 const ALL_ROLES = ["admin", "secretary", "partner", "lawyer", "paralegal"];
 
@@ -27,6 +27,16 @@ function roleOptionsHtml(selectedRole) {
   return assignableRoles().map(
     (r) => `<option value="${r}" ${r === selectedRole ? "selected" : ""}>${escapeHtml(USER_ROLES[r])}</option>`
   ).join("");
+}
+
+/** ชื่อ (ตัวหนา) + อีเมล (เล็ก สีเทา) — ให้รู้ว่าอีเมลไหนเป็นใคร */
+function personCellHtml(p) {
+  const missing = isProfileNameMissing(p);
+  return `
+    <div class="min-w-0">
+      <div class="font-medium text-slate-800 truncate">${escapeHtml(missing ? "(ยังไม่ได้กรอกชื่อ)" : formatPersonName(p))}</div>
+      <div class="text-xs text-slate-400 truncate">${escapeHtml(p.email || "")}</div>
+    </div>`;
 }
 
 export function initAdminPage() {
@@ -140,7 +150,7 @@ async function renderMembers() {
         const locked = m.role === "admin" && !isAdmin();
         return `
           <div class="flex items-center justify-between px-3 py-2 border-b border-slate-100 text-sm last:border-0">
-            <span class="font-medium text-slate-800">${escapeHtml(m.full_name)}</span>
+            ${personCellHtml(m)}
             ${
               locked
                 ? `<span class="text-xs px-2 py-1 rounded-lg bg-slate-100 text-slate-500">${escapeHtml(USER_ROLES.admin)}</span>`
@@ -188,9 +198,9 @@ async function renderUnclaimed() {
         const { date } = formatDateTimeTH(u.created_at);
         return `
           <div class="flex items-center justify-between px-3 py-2 border-b border-slate-100 text-sm last:border-0">
-            <div>
-              <span class="font-medium text-slate-800">${escapeHtml(u.full_name)}</span>
-              <span class="text-xs text-slate-400 ml-2">สมัครเมื่อ ${date}</span>
+            <div class="min-w-0">
+              ${personCellHtml(u)}
+              <div class="text-[11px] text-slate-400">สมัครเมื่อ ${date}</div>
             </div>
             <div class="flex items-center gap-2">
               <select id="unclaimed_role_${index}" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500">

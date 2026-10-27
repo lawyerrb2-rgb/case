@@ -92,3 +92,18 @@ export function getFormValue(id) {
   const el = document.getElementById(id);
   return el ? el.value.trim() : "";
 }
+
+// -------------------------------------------------------------
+// ชื่อบุคคล — แสดง "ชื่อ นามสกุล (ชื่อเล่น)" แทนอีเมลเสมอเมื่อมีชื่อแล้ว
+// -------------------------------------------------------------
+/** ผู้ใช้ที่ยังไม่กรอกชื่อ: full_name จะเป็นอีเมล (หรือไม่มี first/last name) */
+export function isProfileNameMissing(p) {
+  return !p || !String(p.first_name || "").trim() || !String(p.last_name || "").trim();
+}
+
+/** ชื่อสำหรับแสดงผล: "สมชาย ใจดี (ชาย)" — ถ้ายังไม่มีชื่อจะ fallback เป็น full_name/อีเมล */
+export function formatPersonName(p) {
+  if (!p) return "";
+  const base = p.full_name || p.email || "";
+  return p.nickname ? `${base} (${p.nickname})` : base;
+}
